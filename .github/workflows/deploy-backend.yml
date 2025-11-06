@@ -1,13 +1,8 @@
 name: Deploy Backend to Cloudflare Workers
 
+# 后端通过本地部署，只保留手动触发选项
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-  workflow_dispatch: # 也支持手动触发
+  workflow_dispatch: # 仅手动触发
 
 jobs:
   deploy:

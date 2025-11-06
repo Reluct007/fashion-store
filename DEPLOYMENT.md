@@ -157,21 +157,9 @@ wrangler pages deploy dist --project-name=fashion-store
 
 ## 步骤 7: 部署后端（Cloudflare Workers）
 
-### 方式 A: 通过 GitHub Actions 自动部署（推荐）
+**注意**：后端通过本地部署，不使用 GitHub Actions 自动部署。
 
-1. **确保已配置 GitHub Secrets**（步骤 5）
-2. **推送代码到 GitHub**：
-   ```bash
-   git add backend/
-   git commit -m "Update backend"
-   git push origin main
-   ```
-3. **GitHub Actions 会自动部署**
-   - 进入 GitHub 仓库的 "Actions" 标签页
-   - 查看 "Deploy Backend to Cloudflare Workers" workflow
-   - 等待部署完成（约 1-2 分钟）
-
-### 方式 B: 通过 Cloudflare Dashboard
+### 方式 A: 通过 Cloudflare Dashboard（推荐）
 
 1. **登录 Cloudflare Dashboard**
    - 访问 https://dash.cloudflare.com/
@@ -189,7 +177,7 @@ wrangler pages deploy dist --project-name=fashion-store
    - 粘贴到 Cloudflare Dashboard 的编辑器中
    - 点击 "Save and deploy"
 
-### 方式 C: 使用 Wrangler CLI（命令行）
+### 方式 B: 使用 Wrangler CLI（命令行，推荐）
 
 ```bash
 cd backend
@@ -197,6 +185,16 @@ npm install
 npx wrangler login  # 首次使用需要登录
 npm run deploy
 ```
+
+### 方式 C: 通过 GitHub Actions（手动触发，可选）
+
+如果需要通过 GitHub Actions 部署：
+
+1. 在 GitHub 仓库页面，点击 "Actions" 标签
+2. 选择 "Deploy Backend to Cloudflare Workers" workflow
+3. 点击 "Run workflow" 按钮
+4. 选择分支（通常是 `main`）
+5. 点击 "Run workflow" 开始部署
 
 ## 步骤 8: 验证部署
 
@@ -238,7 +236,22 @@ npm run deploy
 
 ### 工作流程
 
-1. **修改代码**
+**前端自动部署**：
+1. **修改前端代码**
+   ```bash
+   # 修改 frontend/ 目录下的文件
+   git add frontend/
+   git commit -m "Update frontend"
+   git push origin main
+   ```
+
+2. **自动触发部署**
+   - GitHub Actions 检测到 `frontend/` 目录变更
+   - 自动运行 "Deploy Frontend to Cloudflare Pages" workflow
+   - 构建并部署到 Cloudflare Pages
+
+**后端本地部署**：
+1. **修改后端代码**
    ```bash
    # 修改 backend/src/index.js 或其他后端文件
    git add backend/
@@ -246,20 +259,16 @@ npm run deploy
    git push origin main
    ```
 
-2. **自动触发部署**
-   - GitHub Actions 检测到 `backend/` 目录变更
-   - 自动运行 "Deploy Backend to Cloudflare Workers" workflow
-   - 构建并部署到 Cloudflare Workers
-
-3. **验证部署**
-   - 查看 GitHub Actions 日志确认部署成功
-   - 测试 API 端点验证功能正常
+2. **本地部署**
+   ```bash
+   cd backend
+   npm run deploy
+   ```
 
 ### 部署触发规则
 
-- **前端变更**: 修改 `frontend/` 目录 → 自动部署前端
-- **后端变更**: 修改 `backend/` 目录 → 自动部署后端
-- **同时变更**: 修改两个目录 → 同时部署前后端
+- **前端变更**: 修改 `frontend/` 目录 → 自动部署前端到 Cloudflare Pages
+- **后端变更**: 修改 `backend/` 目录 → **需要手动本地部署**
 - **Workflow 变更**: 修改 `.github/workflows/` 文件 → 触发相应部署
 
 ## 更新部署
