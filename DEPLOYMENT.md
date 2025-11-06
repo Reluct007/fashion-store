@@ -12,6 +12,7 @@
 
 - **前端**: Cloudflare Pages（静态网站托管）
 - **后端**: Cloudflare Workers（边缘计算）
+- **数据库**: Cloudflare D1（边缘数据库）
 - **部署方式**: 自动部署（GitHub Actions）+ 手动部署选项
 
 ## 自动部署配置
@@ -155,7 +156,99 @@ npm run build
 wrangler pages deploy dist --project-name=fashion-store
 ```
 
-## 步骤 7: 部署后端（Cloudflare Workers）
+## 步骤 7: 设置数据库（Cloudflare D1）
+
+### 方式 A: 使用自动化脚本（推荐）
+
+```bash
+cd backend
+node scripts/setup-database.js
+```
+
+或者使用 bash 脚本：
+
+```bash
+cd backend
+./scripts/setup-database.sh
+```
+
+脚本会自动：
+1. ✅ 检查并安装 Wrangler CLI
+2. ✅ 登录 Cloudflare（如果未登录）
+3. ✅ 创建 D1 数据库
+4. ✅ 更新 `wrangler.toml` 配置
+5. ✅ 初始化数据库表结构
+
+### 方式 B: 手动设置
+
+#### 步骤 1: 创建 D1 数据库
+
+1. **登录 Cloudflare Dashboard**
+   - 访问 https://dash.cloudflare.com/
+   - 登录您的账号
+
+2. **创建 D1 数据库**
+   - 在左侧菜单选择 "Workers & Pages"
+   - 点击 "D1" 标签
+   - 点击 "Create database"
+   - 输入数据库名称：`fashion-store-db`
+   - 选择区域（建议选择离您最近的区域）
+   - 点击 "Create"
+
+3. **获取数据库 ID**
+   - 创建完成后，在数据库详情页面可以看到 "Database ID"
+   - 复制这个 ID
+
+#### 步骤 2: 配置 wrangler.toml
+
+打开 `backend/wrangler.toml` 文件，更新：
+
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "fashion-store-db"
+database_id = "YOUR_DATABASE_ID_HERE"  # 替换为实际的数据库 ID
+```
+
+#### 步骤 3: 初始化远程数据库
+
+**重要**：必须使用 `--remote` 标志来更新远程数据库！
+
+```bash
+cd backend
+npx wrangler d1 execute fashion-store-db --remote \
+  --file=./migrations/0001_initial.sql
+```
+
+这会创建所有必要的表（users, product_configs, system_configs）和默认管理员用户。
+
+#### 步骤 4: 验证数据库
+
+```bash
+# 验证表结构
+npx wrangler d1 execute fashion-store-db --remote \
+  --command="SELECT name FROM sqlite_master WHERE type='table';"
+
+# 验证用户
+npx wrangler d1 execute fashion-store-db --remote \
+  --command="SELECT username, password_hash FROM users WHERE username='admin';"
+```
+
+应该看到：
+- 表：`users`, `product_configs`, `system_configs`
+- 用户：`admin` / `admin123`
+
+### 方式 C: 通过 Cloudflare Dashboard
+
+1. 在 Cloudflare Dashboard 中进入 D1 数据库页面
+2. 点击 `fashion-store-db` 数据库
+3. 选择 "Console" 标签
+4. 打开 `backend/migrations/0001_initial.sql` 文件
+5. 复制全部内容
+6. 粘贴到 D1 Console 中
+7. 点击 "Execute" 执行
+
+## 步骤 8: 部署后端（Cloudflare Workers）
 
 ### 方式 A: 通过 GitHub Actions 自动部署（推荐）
 
@@ -202,17 +295,7 @@ npx wrangler login  # 首次使用需要登录
 npm run deploy
 ```
 
-### 方式 D: 通过 GitHub Actions（手动触发，可选）
-
-如果需要通过 GitHub Actions 部署：
-
-1. 在 GitHub 仓库页面，点击 "Actions" 标签
-2. 选择 "Deploy Backend to Cloudflare Workers" workflow
-3. 点击 "Run workflow" 按钮
-4. 选择分支（通常是 `main`）
-5. 点击 "Run workflow" 开始部署
-
-## 步骤 8: 验证部署
+## 步骤 9: 验证部署
 
 ### 前端验证
 
@@ -239,14 +322,52 @@ npm run deploy
    - **变量名**: `VITE_API_URL`
    - **值**: `https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
    
-   或者在 GitHub Actions 中配置（推荐）：
-   - 在 `.github/workflows/deploy-frontend.yml` 中添加环境变量
+   或者在 GitHub Actions 中配置（推荐）
 
 3. **重新部署前端**
    - 如果使用环境变量文件，需要重新构建并部署
    - 如果使用 Cloudflare Pages 环境变量，保存后会自动重新部署
 
 **注意**：前端代码已经集成了 API 调用功能，配置环境变量后即可使用。
+
+## 数据库表结构
+
+### users 表
+- `id`: 主键
+- `username`: 用户名（唯一）
+- `email`: 邮箱（唯一）
+- `password_hash`: 密码（当前为明文，生产环境应使用哈希）
+- `role`: 角色（默认 'admin'）
+- `created_at`: 创建时间
+- `updated_at`: 更新时间
+
+### product_configs 表
+- `id`: 主键
+- `product_id`: 产品 ID
+- `button_type`: 触发类型（'add_to_cart', 'buy_now', 'product_image', 'product_title', 'custom'）
+- `action_type`: 操作类型（'link', 'api', 'modal'）
+- `target_url`: 目标 URL（当 action_type 为 'link' 时）
+- `api_endpoint`: API 端点（当 action_type 为 'api' 时）
+- `is_enabled`: 是否启用
+- `created_at`: 创建时间
+- `updated_at`: 更新时间
+
+### system_configs 表
+- `id`: 主键
+- `config_key`: 配置键（唯一）
+- `config_value`: 配置值
+- `config_type`: 配置类型（'string', 'number', 'boolean', 'json'）
+- `description`: 描述
+- `created_at`: 创建时间
+- `updated_at`: 更新时间
+
+## 默认管理员账户
+
+数据库初始化后，会自动创建默认管理员账户：
+- **用户名**: `admin`
+- **密码**: `admin123`
+
+**重要**: 首次登录后，请立即修改密码！
 
 ## 自动部署流程
 
@@ -255,12 +376,10 @@ npm run deploy
 **前端自动部署**：
 1. **修改前端代码**
    ```bash
-   # 修改 frontend/ 目录下的文件
    git add frontend/
    git commit -m "Update frontend"
    git push origin main
    ```
-
 2. **自动触发部署**
    - GitHub Actions 检测到 `frontend/` 目录变更
    - 自动运行 "Deploy Frontend to Cloudflare Pages" workflow
@@ -269,12 +388,10 @@ npm run deploy
 **后端自动部署**：
 1. **修改后端代码**
    ```bash
-   # 修改 backend/src/index.js 或其他后端文件
    git add backend/
    git commit -m "Update backend API"
    git push origin main
    ```
-
 2. **自动触发部署**
    - GitHub Actions 检测到 `backend/` 目录变更
    - 自动运行 "Deploy Backend to Cloudflare Workers" workflow
@@ -303,7 +420,6 @@ npm run deploy
 每次更新代码：
 
 ```bash
-# 修改代码后
 git add .
 git commit -m "Update: 描述您的更改"
 git push origin main
@@ -391,6 +507,99 @@ npm run deploy
    - **配置错误**: 检查 `backend/wrangler.toml`
    - **代码错误**: 检查代码语法
 
+### 数据库相关问题
+
+#### 数据库未配置
+
+如果看到 "Database not configured" 错误：
+1. 确认已在 Cloudflare Dashboard 创建数据库
+2. 确认 `wrangler.toml` 中的 `database_id` 已正确配置
+3. 重新部署后端
+
+#### 数据库初始化失败
+
+如果数据库初始化失败：
+1. 检查迁移 SQL 文件是否正确
+2. 在 Cloudflare Dashboard 的 D1 Console 中手动执行 SQL
+3. 查看 Worker 日志排查错误
+
+#### 远程数据库表不存在
+
+如果执行命令时提示 "no such table: users"：
+
+**问题**：命令可能在本地数据库执行，需要使用 `--remote` 标志。
+
+**解决方案**：
+```bash
+cd backend
+npx wrangler d1 execute fashion-store-db --remote \
+  --file=./migrations/0001_initial.sql
+```
+
+**重要提示**：
+- 必须使用 `--remote` 标志来更新远程数据库
+- 不加 `--remote` 只会在本地数据库执行，不会影响 Cloudflare 上的数据库
+
+#### 更新远程数据库密码
+
+如果数据库中的密码是 bcrypt 哈希，需要更新为明文：
+
+```bash
+cd backend
+npx wrangler d1 execute fashion-store-db --remote \
+  --command="UPDATE users SET password_hash = 'admin123', updated_at = CURRENT_TIMESTAMP WHERE username = 'admin';"
+```
+
+验证：
+```bash
+npx wrangler d1 execute fashion-store-db --remote \
+  --command="SELECT username, password_hash FROM users WHERE username='admin';"
+```
+
+### 登录问题
+
+#### 无法登录，显示 "Invalid credentials"
+
+**快速解决方案**：
+
+后端已支持两种登录方式：
+1. **数据库认证**（如果已配置数据库）
+2. **内存认证回退**（如果数据库未配置）
+
+**默认登录凭证**：
+- 用户名：`admin`
+- 密码：`admin123`
+
+**排查步骤**：
+
+1. **检查后端是否正常运行**
+   ```
+   https://fashion-store-api.reluct007.workers.dev/api/health
+   ```
+
+2. **测试登录 API**
+   ```bash
+   curl -X POST https://fashion-store-api.reluct007.workers.dev/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"username":"admin","password":"admin123"}'
+   ```
+
+3. **检查数据库配置**
+   - 如果使用数据库，确认数据库已初始化
+   - 确认用户存在且密码正确
+   - 如果密码是 bcrypt 哈希，需要更新为明文（见上方）
+
+4. **检查浏览器控制台**
+   - 打开开发者工具（F12）
+   - 查看 Console 和 Network 标签
+   - 检查请求和响应
+
+5. **查看后端日志**
+   ```bash
+   cd backend
+   npx wrangler tail
+   ```
+
 ### 网站无法访问
 
 1. 检查 Cloudflare Pages 部署状态
@@ -422,13 +631,39 @@ npm run dev:backend
 - 前端: http://localhost:5173
 - 后端 API: http://localhost:8787
 
+### 本地数据库开发
+
+```bash
+cd backend
+# 初始化本地数据库
+npx wrangler d1 execute fashion-store-db --local --file=./migrations/0001_initial.sql
+
+# 启动开发服务器（使用本地数据库）
+npx wrangler dev
+```
+
+## 数据库备份和恢复
+
+### 备份数据库
+
+```bash
+npx wrangler d1 export fashion-store-db --remote --output=backup.sql
+```
+
+### 恢复数据库
+
+```bash
+npx wrangler d1 execute fashion-store-db --remote --file=backup.sql
+```
+
 ## 技术支持
 
 如果遇到问题：
 1. 查看 [Cloudflare Pages 文档](https://developers.cloudflare.com/pages/)
 2. 查看 [Cloudflare Workers 文档](https://developers.cloudflare.com/workers/)
-3. 查看 [GitHub Actions 文档](https://docs.github.com/en/actions)
-4. 检查项目 README.md
+3. 查看 [Cloudflare D1 文档](https://developers.cloudflare.com/d1/)
+4. 查看 [GitHub Actions 文档](https://docs.github.com/en/actions)
+5. 检查项目 README.md
 
 ---
 
