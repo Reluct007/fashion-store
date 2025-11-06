@@ -157,9 +157,23 @@ wrangler pages deploy dist --project-name=fashion-store
 
 ## 步骤 7: 部署后端（Cloudflare Workers）
 
-**注意**：后端通过本地部署，不使用 GitHub Actions 自动部署。
+### 方式 A: 通过 GitHub Actions 自动部署（推荐）
 
-### 方式 A: 通过 Cloudflare Dashboard（推荐）
+1. **确保已配置 GitHub Secrets**（步骤 5）
+2. **推送代码到 GitHub**：
+   ```bash
+   git add backend/
+   git commit -m "Update backend"
+   git push origin main
+   ```
+3. **GitHub Actions 会自动部署**
+   - 进入 GitHub 仓库的 "Actions" 标签页
+   - 查看 "Deploy Backend to Cloudflare Workers" workflow
+   - 等待部署完成（约 1-2 分钟）
+
+**如果 GitHub Actions 失败**，可以使用下面的本地部署方式。
+
+### 方式 B: 通过 Cloudflare Dashboard
 
 1. **登录 Cloudflare Dashboard**
    - 访问 https://dash.cloudflare.com/
@@ -177,7 +191,9 @@ wrangler pages deploy dist --project-name=fashion-store
    - 粘贴到 Cloudflare Dashboard 的编辑器中
    - 点击 "Save and deploy"
 
-### 方式 B: 使用 Wrangler CLI（命令行，推荐）
+### 方式 C: 使用 Wrangler CLI（命令行，本地部署备选方案）
+
+如果 GitHub Actions 部署失败，可以使用本地部署：
 
 ```bash
 cd backend
@@ -186,7 +202,7 @@ npx wrangler login  # 首次使用需要登录
 npm run deploy
 ```
 
-### 方式 C: 通过 GitHub Actions（手动触发，可选）
+### 方式 D: 通过 GitHub Actions（手动触发，可选）
 
 如果需要通过 GitHub Actions 部署：
 
@@ -250,7 +266,7 @@ npm run deploy
    - 自动运行 "Deploy Frontend to Cloudflare Pages" workflow
    - 构建并部署到 Cloudflare Pages
 
-**后端本地部署**：
+**后端自动部署**：
 1. **修改后端代码**
    ```bash
    # 修改 backend/src/index.js 或其他后端文件
@@ -259,17 +275,26 @@ npm run deploy
    git push origin main
    ```
 
-2. **本地部署**
-   ```bash
-   cd backend
-   npm run deploy
-   ```
+2. **自动触发部署**
+   - GitHub Actions 检测到 `backend/` 目录变更
+   - 自动运行 "Deploy Backend to Cloudflare Workers" workflow
+   - 构建并部署到 Cloudflare Workers
+
+3. **如果部署失败**
+   - 查看 GitHub Actions 日志排查问题
+   - 或使用本地部署作为备选方案：
+     ```bash
+     cd backend
+     npm run deploy
+     ```
 
 ### 部署触发规则
 
 - **前端变更**: 修改 `frontend/` 目录 → 自动部署前端到 Cloudflare Pages
-- **后端变更**: 修改 `backend/` 目录 → **需要手动本地部署**
+- **后端变更**: 修改 `backend/` 目录 → 自动部署后端到 Cloudflare Workers
+- **同时变更**: 修改两个目录 → 同时部署前后端
 - **Workflow 变更**: 修改 `.github/workflows/` 文件 → 触发相应部署
+- **部署失败**: GitHub Actions 失败时，可以使用本地部署作为备选方案
 
 ## 更新部署
 
@@ -288,6 +313,25 @@ git push origin main
 - GitHub Actions 检测变更
 - 根据变更路径自动触发相应部署
 - 等待部署完成（可在 Actions 页面查看）
+
+### 如果 GitHub Actions 部署失败
+
+如果自动部署失败，可以使用本地部署：
+
+**前端本地部署**：
+```bash
+cd frontend
+npm install
+npm run build
+wrangler pages deploy dist --project-name=fashion-store
+```
+
+**后端本地部署**：
+```bash
+cd backend
+npm install
+npm run deploy
+```
 
 ### 手动触发部署
 
