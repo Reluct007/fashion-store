@@ -168,24 +168,65 @@ export async function upsertProductConfig(env, config) {
   if (!env.DB) return null;
 
   try {
-    const result = await env.DB.prepare(
-      `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, is_enabled)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON CONFLICT(product_id, button_type) 
-       DO UPDATE SET 
-         action_type = excluded.action_type,
-         target_url = excluded.target_url,
-         api_endpoint = excluded.api_endpoint,
-         is_enabled = excluded.is_enabled,
-         updated_at = CURRENT_TIMESTAMP`
-    ).bind(
-      config.product_id,
-      config.button_type,
-      config.action_type,
-      config.target_url || null,
-      config.api_endpoint || null,
-      config.is_enabled !== undefined ? config.is_enabled : 1
-    ).run();
+    // 检查是否有 page_path 列（向后兼容）
+    let hasPagePath = false;
+    try {
+      await env.DB.prepare('SELECT page_path FROM product_configs LIMIT 1').first();
+      hasPagePath = true;
+    } catch {
+      // 如果列不存在，稍后添加
+    }
+    
+    // 如果没有 page_path 列，尝试添加（SQLite 3.35.0+ 支持）
+    if (!hasPagePath) {
+      try {
+        await env.DB.prepare('ALTER TABLE product_configs ADD COLUMN page_path TEXT').run();
+      } catch {
+        // 如果添加失败，忽略（可能是旧版本 SQLite）
+      }
+    }
+    
+    const sql = hasPagePath || true
+      ? `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, page_path, is_enabled)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(product_id, button_type) 
+         DO UPDATE SET 
+           action_type = excluded.action_type,
+           target_url = excluded.target_url,
+           api_endpoint = excluded.api_endpoint,
+           page_path = excluded.page_path,
+           is_enabled = excluded.is_enabled,
+           updated_at = CURRENT_TIMESTAMP`
+      : `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, is_enabled)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT(product_id, button_type) 
+         DO UPDATE SET 
+           action_type = excluded.action_type,
+           target_url = excluded.target_url,
+           api_endpoint = excluded.api_endpoint,
+           is_enabled = excluded.is_enabled,
+           updated_at = CURRENT_TIMESTAMP`;
+    
+    const params = hasPagePath || true
+      ? [
+          config.product_id,
+          config.button_type,
+          config.action_type,
+          config.target_url || null,
+          config.api_endpoint || null,
+          config.page_path || null,
+          config.is_enabled !== undefined ? config.is_enabled : 1
+        ]
+      : [
+          config.product_id,
+          config.button_type,
+          config.action_type,
+          config.target_url || null,
+          config.api_endpoint || null,
+          config.is_enabled !== undefined ? config.is_enabled : 1
+        ];
+    
+    const result = await env.DB.prepare(sql).bind(...params).run();
 
     return result;
   } catch (error) {

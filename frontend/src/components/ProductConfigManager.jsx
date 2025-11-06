@@ -9,7 +9,9 @@ export default function ProductConfigManager() {
   const [error, setError] = useState(null);
   const [editingConfig, setEditingConfig] = useState(null);
   const [formData, setFormData] = useState({
+    page_type: 'product', // 'home', 'product', 'page'
     product_id: '',
+    page_path: '',
     button_type: 'add_to_cart',
     action_type: 'link',
     target_url: '',
@@ -44,7 +46,9 @@ export default function ProductConfigManager() {
       await loadData();
       setEditingConfig(null);
       setFormData({
+        page_type: 'product',
         product_id: '',
+        page_path: '',
         button_type: 'add_to_cart',
         action_type: 'link',
         target_url: '',
@@ -69,8 +73,18 @@ export default function ProductConfigManager() {
 
   const handleEdit = (config) => {
     setEditingConfig(config.id);
+    // 根据 product_id 判断页面类型
+    let pageType = 'product';
+    if (config.product_id === 0) {
+      pageType = 'home';
+    } else if (config.product_id < 0 || config.page_path) {
+      pageType = 'page';
+    }
+    
     setFormData({
-      product_id: config.product_id.toString(),
+      page_type: pageType,
+      product_id: config.product_id > 0 ? config.product_id.toString() : '',
+      page_path: config.page_path || '',
       button_type: config.button_type,
       action_type: config.action_type,
       target_url: config.target_url || '',
@@ -79,9 +93,15 @@ export default function ProductConfigManager() {
     });
   };
 
-  const getProductName = (productId) => {
-    const product = products.find(p => p.id === productId);
-    return product ? product.name : `Product #${productId}`;
+  const getPageName = (productId, pagePath) => {
+    if (productId === 0) {
+      return 'Home Page';
+    } else if (productId < 0 || pagePath) {
+      return pagePath || 'Custom Page';
+    } else {
+      const product = products.find(p => p.id === productId);
+      return product ? product.name : `Product #${productId}`;
+    }
   };
 
   if (loading) {
@@ -118,27 +138,70 @@ export default function ProductConfigManager() {
       )}
 
       {/* Configuration Form */}
-      {(!configs.length || editingConfig !== null || !configs.find(c => c.product_id === parseInt(formData.product_id))) && (
+      {(!configs.length || editingConfig !== null || !configs.find(c => {
+        if (formData.page_type === 'home') {
+          return c.product_id === 0;
+        } else if (formData.page_type === 'page') {
+          return c.product_id === -1 && c.page_path === formData.page_path;
+        } else {
+          return c.product_id === parseInt(formData.product_id);
+        }
+      })) && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {editingConfig ? 'Edit Configuration' : 'Add New Configuration'}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Page Type</label>
               <select
-                value={formData.product_id}
-                onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
+                value={formData.page_type}
+                onChange={(e) => {
+                  const newPageType = e.target.value;
+                  setFormData({ 
+                    ...formData, 
+                    page_type: newPageType,
+                    product_id: newPageType === 'product' ? formData.product_id : (newPageType === 'home' ? '0' : ''),
+                    page_path: newPageType === 'page' ? formData.page_path : ''
+                  });
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
               >
-                <option value="">Select Product</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} (#{product.id})
-                  </option>
-                ))}
+                <option value="home">Home Page</option>
+                <option value="product">Product Detail Page</option>
+                <option value="page">Custom Page</option>
               </select>
             </div>
+            {formData.page_type === 'product' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                <select
+                  value={formData.product_id}
+                  onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="">Select Product</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name} (#{product.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {formData.page_type === 'page' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Page Path</label>
+                <input
+                  type="text"
+                  value={formData.page_path}
+                  onChange={(e) => setFormData({ ...formData, page_path: e.target.value })}
+                  placeholder="/about, /contact, etc."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Enter the page path (e.g., /about, /contact)</p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Trigger Type</label>
               <select
@@ -150,6 +213,7 @@ export default function ProductConfigManager() {
                 <option value="buy_now">Buy Now Button</option>
                 <option value="product_image">Product Image</option>
                 <option value="product_title">Product Title</option>
+                <option value="page_area">Click Anywhere on Page</option>
                 <option value="custom">Custom Element</option>
               </select>
             </div>
@@ -235,7 +299,7 @@ export default function ProductConfigManager() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Page</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trigger Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target</th>
@@ -248,7 +312,7 @@ export default function ProductConfigManager() {
                 <tr key={config.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {getProductName(config.product_id)}
+                      {getPageName(config.product_id, config.page_path)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
