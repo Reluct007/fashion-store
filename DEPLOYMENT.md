@@ -12,7 +12,26 @@
 
 - **前端**: Cloudflare Pages（静态网站托管）
 - **后端**: Cloudflare Workers（边缘计算）
-- **部署方式**: 分开部署，互不影响
+- **部署方式**: 自动部署（GitHub Actions）+ 手动部署选项
+
+## 自动部署配置
+
+### GitHub Actions 自动部署
+
+项目已配置自动部署，当您推送代码到 `main` 分支时：
+
+- **修改 `frontend/` 目录** → 自动部署前端到 Cloudflare Pages
+- **修改 `backend/` 目录** → 自动部署后端到 Cloudflare Workers
+- **同时修改两个目录** → 同时部署前后端
+
+### 手动触发部署
+
+如果需要手动触发部署：
+
+1. 访问 GitHub 仓库：https://github.com/Reluct007/fashion-store
+2. 点击 "Actions" 标签
+3. 选择对应的 workflow（前端或后端）
+4. 点击 "Run workflow" 按钮
 
 ## 步骤 1: 创建 GitHub 仓库
 
@@ -85,31 +104,49 @@ git push -u origin main
 
 ## 步骤 6: 部署前端（Cloudflare Pages）
 
-### 方式 A: 通过 GitHub Actions（推荐）
+### 方式 A: 通过 GitHub Actions 自动部署（推荐）
 
-1. 确保已配置 GitHub Secrets（步骤 5）
-2. 推送代码到 GitHub：
+1. **确保已配置 GitHub Secrets**（步骤 5）
+2. **推送代码到 GitHub**：
    ```bash
+   git add frontend/
+   git commit -m "Update frontend"
    git push origin main
    ```
-3. GitHub Actions 会自动检测 `frontend/` 目录的变更并部署
+3. **GitHub Actions 会自动部署**
+   - 进入 GitHub 仓库的 "Actions" 标签页
+   - 查看 "Deploy Frontend to Cloudflare Pages" workflow
+   - 等待部署完成（约 2-5 分钟）
 
-### 方式 B: 通过 Cloudflare Dashboard
+### 方式 B: 通过 Cloudflare Dashboard（Git 连接）
 
-1. 登录 Cloudflare Dashboard
-2. 在左侧菜单选择 "Workers & Pages"
-3. 点击 "Create application" > "Pages" > "Connect to Git"
-4. 选择您的 GitHub 账号，然后选择 `fashion-store` 仓库
-5. 点击 "Begin setup"
-6. 配置构建设置：
+1. **登录 Cloudflare Dashboard**
+   - 访问 https://dash.cloudflare.com/
+   - 登录您的账号
+
+2. **创建 Pages 项目**
+   - 在左侧菜单选择 "Workers & Pages"
+   - 点击 "Create application" > "Pages" > "Connect to Git"
+   - 选择您的 GitHub 账号，然后选择 `fashion-store` 仓库
+   - 点击 "Begin setup"
+
+3. **配置构建设置**
    - **Project name**: `fashion-store`
    - **Production branch**: `main`
    - **Build command**: `cd frontend && npm install && npm run build`
    - **Build output directory**: `frontend/dist`
    - **Root directory**: `/`
-7. 点击 "Save and Deploy"
 
-### 方式 C: 手动部署
+4. **添加环境变量**
+   - 在 "Settings" → "Environment variables" 中添加：
+   - Name: `VITE_API_URL`
+   - Value: `https://fashion-store-api.reluct007.workers.dev`
+
+5. **保存并部署**
+   - 点击 "Save and Deploy"
+   - 等待构建完成
+
+### 方式 C: 使用 Wrangler CLI（命令行）
 
 ```bash
 cd frontend
@@ -120,84 +157,46 @@ wrangler pages deploy dist --project-name=fashion-store
 
 ## 步骤 7: 部署后端（Cloudflare Workers）
 
-### 方式 A: 通过 Cloudflare Dashboard（推荐，最简单）
-
-1. **登录 Cloudflare Dashboard**
-   - 访问 https://dash.cloudflare.com/
-   - 登录您的账号
-
-2. **创建 Worker**
-   - 在左侧菜单选择 "Workers & Pages"
-   - 点击 "Create application"
-   - 选择 "Workers"
-   - 点击 "Create Worker"
-
-3. **配置 Worker**
-   - **Worker name**: `fashion-store-api`
-   - 点击 "Deploy" 先创建一个空 Worker
-
-4. **上传代码**
-   - 在 Worker 页面，点击 "Quick edit" 或 "Edit code"
-   - 打开 `backend/src/index.js` 文件，复制全部内容
-   - 粘贴到 Cloudflare Dashboard 的编辑器中
-   - 点击 "Save and deploy"
-
-5. **获取 Worker URL**
-   - 部署成功后，在 Worker 页面可以看到 URL
-   - 格式类似：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
-
-### 方式 B: 使用 Wrangler CLI（本地部署）
-
-1. **安装依赖**（如果还没安装）：
-   ```bash
-   cd backend
-   npm install
-   ```
-
-2. **登录 Cloudflare**：
-   ```bash
-   npx wrangler login
-   ```
-   - 这会打开浏览器，登录并授权
-
-3. **部署 Worker**：
-   ```bash
-   npm run deploy
-   ```
-   或
-   ```bash
-   npx wrangler deploy
-   ```
-
-4. **查看部署结果**：
-   - 部署成功后会显示 Worker URL
-   - 格式类似：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
-
-### 方式 C: 通过 GitHub Actions（自动部署）
+### 方式 A: 通过 GitHub Actions 自动部署（推荐）
 
 1. **确保已配置 GitHub Secrets**（步骤 5）
 2. **推送代码到 GitHub**：
    ```bash
    git add backend/
-   git commit -m "Add backend API"
+   git commit -m "Update backend"
    git push origin main
    ```
 3. **GitHub Actions 会自动部署**
    - 进入 GitHub 仓库的 "Actions" 标签页
    - 查看 "Deploy Backend to Cloudflare Workers" workflow
-   - 等待部署完成
+   - 等待部署完成（约 1-2 分钟）
 
-### 配置 Workers 路由（可选，需要自定义域名）
+### 方式 B: 通过 Cloudflare Dashboard
 
-如果需要使用自定义域名，在 `backend/wrangler.toml` 中配置：
+1. **登录 Cloudflare Dashboard**
+   - 访问 https://dash.cloudflare.com/
+   - 登录您的账号
 
-```toml
-[[routes]]
-pattern = "api.yourdomain.com/*"
-zone_name = "yourdomain.com"
+2. **创建或访问 Worker**
+   - 在左侧菜单选择 "Workers & Pages"
+   - 如果 Worker 已存在，点击 "fashion-store-api"
+   - 如果不存在，点击 "Create application" > "Workers" > "Create Worker"
+   - Worker name: `fashion-store-api`
+
+3. **上传代码**
+   - 在 Worker 页面，点击 "Quick edit" 或 "Edit code"
+   - 打开 `backend/src/index.js` 文件，复制全部内容
+   - 粘贴到 Cloudflare Dashboard 的编辑器中
+   - 点击 "Save and deploy"
+
+### 方式 C: 使用 Wrangler CLI（命令行）
+
+```bash
+cd backend
+npm install
+npx wrangler login  # 首次使用需要登录
+npm run deploy
 ```
-
-**注意**：需要先在 Cloudflare 添加域名并配置 DNS。
 
 ## 步骤 8: 验证部署
 
@@ -207,11 +206,12 @@ zone_name = "yourdomain.com"
    `https://fashion-store.pages.dev`
 2. 访问该 URL 验证网站是否正常运行
 3. 测试管理面板：访问 `https://your-domain.pages.dev/admin`
+4. 测试产品详情页：点击任意产品
 
 ### 后端验证
 
 1. 访问健康检查端点：
-   `https://fashion-store-api.your-subdomain.workers.dev/api/health`
+   `https://fashion-store-api.reluct007.workers.dev/api/health`
 2. 应该返回：`{"status":"ok","timestamp":"..."}`
 
 ### 连接前后端
@@ -221,22 +221,73 @@ zone_name = "yourdomain.com"
    - 格式：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
 
 2. **配置前端环境变量**
-   - 在 `frontend/` 目录创建 `.env` 文件（如果不存在）
-   - 添加以下内容：
-     ```
-     VITE_API_URL=https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev
-     ```
-   - 替换 `YOUR_SUBDOMAIN` 为您的实际子域名
+   - 在 Cloudflare Pages 项目设置中，添加环境变量：
+   - **变量名**: `VITE_API_URL`
+   - **值**: `https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
+   
+   或者在 GitHub Actions 中配置（推荐）：
+   - 在 `.github/workflows/deploy-frontend.yml` 中添加环境变量
 
-3. **重新构建和部署前端**
-   ```bash
-   cd frontend
-   npm run build
-   ```
-   - 如果使用 GitHub Actions，推送代码会自动重新部署
-   - 如果使用 Cloudflare Dashboard，重新部署项目
+3. **重新部署前端**
+   - 如果使用环境变量文件，需要重新构建并部署
+   - 如果使用 Cloudflare Pages 环境变量，保存后会自动重新部署
 
 **注意**：前端代码已经集成了 API 调用功能，配置环境变量后即可使用。
+
+## 自动部署流程
+
+### 工作流程
+
+1. **修改代码**
+   ```bash
+   # 修改 backend/src/index.js 或其他后端文件
+   git add backend/
+   git commit -m "Update backend API"
+   git push origin main
+   ```
+
+2. **自动触发部署**
+   - GitHub Actions 检测到 `backend/` 目录变更
+   - 自动运行 "Deploy Backend to Cloudflare Workers" workflow
+   - 构建并部署到 Cloudflare Workers
+
+3. **验证部署**
+   - 查看 GitHub Actions 日志确认部署成功
+   - 测试 API 端点验证功能正常
+
+### 部署触发规则
+
+- **前端变更**: 修改 `frontend/` 目录 → 自动部署前端
+- **后端变更**: 修改 `backend/` 目录 → 自动部署后端
+- **同时变更**: 修改两个目录 → 同时部署前后端
+- **Workflow 变更**: 修改 `.github/workflows/` 文件 → 触发相应部署
+
+## 更新部署
+
+### 更新代码并自动部署
+
+每次更新代码：
+
+```bash
+# 修改代码后
+git add .
+git commit -m "Update: 描述您的更改"
+git push origin main
+```
+
+**自动部署流程**：
+- GitHub Actions 检测变更
+- 根据变更路径自动触发相应部署
+- 等待部署完成（可在 Actions 页面查看）
+
+### 手动触发部署
+
+如果需要手动触发：
+
+1. 访问 GitHub 仓库的 "Actions" 标签
+2. 选择对应的 workflow
+3. 点击 "Run workflow"
+4. 选择分支并运行
 
 ## 自定义域名（可选）
 
@@ -253,56 +304,39 @@ zone_name = "yourdomain.com"
 1. 在 Cloudflare Workers 项目页面，配置自定义路由
 2. 或使用 Cloudflare Workers 的子域名
 
-## 持续部署
-
-配置完成后，每次您：
-- 推送到 `main` 分支
-- 创建 Pull Request 到 `main` 分支
-
-GitHub Actions 会自动：
-- 检测变更路径（`frontend/` 或 `backend/`）
-- 触发相应的部署流程
-- 部署到 Cloudflare
-
-### 部署触发规则
-
-- **前端变更**: 修改 `frontend/` 目录 → 自动部署前端
-- **后端变更**: 修改 `backend/` 目录 → 自动部署后端
-- **同时变更**: 修改两个目录 → 同时部署前后端
-
-## 更新部署
-
-每次更新代码：
-
-```bash
-# 修改代码后
-git add .
-git commit -m "Update: 描述您的更改"
-git push origin main
-```
-
-Cloudflare 会自动重新部署。
-
 ## 故障排除
+
+### GitHub Actions 部署失败
+
+1. **检查 Secrets 配置**
+   - 确认 `CLOUDFLARE_API_TOKEN` 和 `CLOUDFLARE_ACCOUNT_ID` 已正确配置
+   - 确认 Token 有足够的权限
+
+2. **查看日志**
+   - 进入 GitHub 仓库的 "Actions" 标签页
+   - 点击失败的 workflow 运行
+   - 查看详细的错误日志
+
+3. **常见问题**
+   - **Token 权限不足**: 检查 Token 是否有 Workers:Edit 和 Pages:Edit 权限
+   - **Account ID 错误**: 确认 Account ID 正确
+   - **构建失败**: 检查代码是否有错误
 
 ### 前端部署失败
 
-1. 检查 GitHub Actions 日志：
-   - 进入仓库的 "Actions" 标签页
-   - 查看 "Deploy Frontend to Cloudflare Pages" workflow
+1. 检查 GitHub Actions 日志
 2. 常见问题：
    - **构建失败**: 检查 `frontend/package.json` 中的依赖
    - **路径错误**: 确认构建命令和输出目录正确
-   - **Token 错误**: 确认 GitHub Secrets 配置正确
+   - **环境变量**: 确认环境变量配置正确
 
 ### 后端部署失败
 
-1. 检查 GitHub Actions 日志：
-   - 查看 "Deploy Backend to Cloudflare Workers" workflow
+1. 检查 GitHub Actions 日志
 2. 常见问题：
    - **依赖错误**: 检查 `backend/package.json`
    - **配置错误**: 检查 `backend/wrangler.toml`
-   - **Token 权限**: 确认 API Token 有 Workers 编辑权限
+   - **代码错误**: 检查代码语法
 
 ### 网站无法访问
 
@@ -346,3 +380,4 @@ npm run dev:backend
 ---
 
 **部署完成后，您的网站将可以通过 Cloudflare 提供的 URL 访问！**
+**每次推送代码到 main 分支，GitHub Actions 会自动部署到 Cloudflare！**
