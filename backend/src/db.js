@@ -288,3 +288,153 @@ export async function setSystemConfig(env, key, value, type = 'string', descript
   }
 }
 
+/**
+ * 记录点击统计
+ */
+export async function recordClickStat(env, statData) {
+  if (!env.DB) return null;
+  try {
+    // 确保 click_stats 表存在
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS click_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target_url TEXT NOT NULL,
+        page_type TEXT NOT NULL,
+        page_id INTEGER,
+        page_path TEXT,
+        click_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+        user_agent TEXT,
+        ip_address TEXT,
+        referer TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    
+    // 创建索引（如果不存在）
+    try {
+      await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_click_stats_url ON click_stats(target_url)').run();
+      await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_click_stats_page ON click_stats(page_type, page_id)').run();
+      await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_click_stats_time ON click_stats(click_time)').run();
+    } catch {
+      // 索引可能已存在，忽略错误
+    }
+    
+    const { lastInsertRowid } = await env.DB.prepare(
+      `INSERT INTO click_stats (target_url, page_type, page_id, page_path, user_agent, ip_address, referer)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+      statData.target_url,
+      statData.page_type,
+      statData.page_id || null,
+      statData.page_path || null,
+      statData.user_agent || null,
+      statData.ip_address || null,
+      statData.referer || null
+    ).run();
+    
+    return { id: lastInsertRowid };
+  } catch (error) {
+    console.error('Error recording click stat:', error);
+    return null;
+  }
+}
+
+/**
+ * 获取点击统计（按 URL 分组）
+ */
+export async function getClickStats(env, filters = {}) {
+  if (!env.DB) return [];
+  try {
+    let query = `
+      SELECT 
+        target_url,
+        page_type,
+        page_id,
+        page_path,
+        COUNT(*) as click_count,
+        MIN(click_time) as first_click,
+        MAX(click_time) as last_click
+      FROM click_stats
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (filters.target_url) {
+      query += ' AND target_url = ?';
+      params.push(filters.target_url);
+    }
+    
+    if (filters.page_type) {
+      query += ' AND page_type = ?';
+      params.push(filters.page_type);
+    }
+    
+    if (filters.start_date) {
+      query += ' AND click_time >= ?';
+      params.push(filters.start_date);
+    }
+    
+    if (filters.end_date) {
+      query += ' AND click_time <= ?';
+      params.push(filters.end_date);
+    }
+    
+    query += ' GROUP BY target_url, page_type, page_id, page_path ORDER BY click_count DESC, last_click DESC';
+    
+    if (filters.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const { results } = await env.DB.prepare(query).bind(...params).all();
+    return results || [];
+  } catch (error) {
+    console.error('Error getting click stats:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取详细的点击记录
+ */
+export async function getClickStatsDetail(env, filters = {}) {
+  if (!env.DB) return [];
+  try {
+    let query = 'SELECT * FROM click_stats WHERE 1=1';
+    const params = [];
+    
+    if (filters.target_url) {
+      query += ' AND target_url = ?';
+      params.push(filters.target_url);
+    }
+    
+    if (filters.page_type) {
+      query += ' AND page_type = ?';
+      params.push(filters.page_type);
+    }
+    
+    if (filters.start_date) {
+      query += ' AND click_time >= ?';
+      params.push(filters.start_date);
+    }
+    
+    if (filters.end_date) {
+      query += ' AND click_time <= ?';
+      params.push(filters.end_date);
+    }
+    
+    query += ' ORDER BY click_time DESC';
+    
+    if (filters.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const { results } = await env.DB.prepare(query).bind(...params).all();
+    return results || [];
+  } catch (error) {
+    console.error('Error getting click stats detail:', error);
+    return [];
+  }
+}
+

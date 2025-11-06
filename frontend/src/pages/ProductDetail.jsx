@@ -4,7 +4,7 @@ import {
   ShoppingCart, Heart, Star, Minus, Plus, 
   Truck, RotateCcw, Shield, Check 
 } from 'lucide-react';
-import { getProduct, getProducts } from '../lib/api';
+import { getProduct, getProducts, recordClickStat } from '../lib/api';
 import CountdownTimer from '../components/common/CountdownTimer';
 import SocialShare from '../components/common/SocialShare';
 import Navbar from '../components/common/Navbar';
@@ -55,9 +55,21 @@ export default function ProductDetail() {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // 如果配置了按钮跳转，则跳转到指定 URL
     if (buttonConfig && buttonConfig.action_type === 'link' && buttonConfig.target_url) {
+      // 记录点击统计
+      try {
+        await recordClickStat({
+          target_url: buttonConfig.target_url,
+          page_type: 'product',
+          page_id: product.id,
+          page_path: null
+        });
+      } catch (err) {
+        console.error('Failed to record click stat:', err);
+      }
+      
       window.open(buttonConfig.target_url, buttonConfig.target_url.startsWith('http') ? '_blank' : '_self');
       return;
     }

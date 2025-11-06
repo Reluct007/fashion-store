@@ -3,7 +3,7 @@
  * Cloudflare Workers 后端服务
  */
 
-import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig } from './db.js';
+import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail } from './db.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
 let products = [
@@ -475,6 +475,17 @@ export default {
           return getSystemConfigs(request, env);
         } else if (request.method === 'POST' && path === '/api/system-configs') {
           return setSystemConfigHandler(request, env);
+        }
+      }
+      
+      // 点击统计 API
+      if (path.startsWith('/api/click-stats')) {
+        if (path === '/api/click-stats' && request.method === 'POST') {
+          return recordClickStatHandler(request, env);
+        } else if (path === '/api/click-stats' && request.method === 'GET') {
+          return getClickStatsHandler(request, env);
+        } else if (path === '/api/click-stats/detail' && request.method === 'GET') {
+          return getClickStatsDetailHandler(request, env);
         }
       }
       

@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, TrendingUp, 
-  Plus, Edit, Trash2, Save, X, Settings, LogOut
+  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
+import ClickStatsManager from '../components/ClickStatsManager';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -179,6 +180,17 @@ export default function Admin() {
           >
             <Settings className="w-5 h-5 inline mr-2" />
             Link Configs
+          </button>
+          <button
+            onClick={() => setActiveTab('stats')}
+            className={`px-6 py-3 font-semibold transition-colors ${
+              activeTab === 'stats'
+                ? 'text-rose-600 border-b-2 border-rose-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <BarChart3 className="w-5 h-5 inline mr-2" />
+            Link Stats
           </button>
         </div>
 
@@ -415,6 +427,11 @@ export default function Admin() {
         {/* Link Configs Tab */}
         {activeTab === 'configs' && (
           <ProductConfigManager />
+        )}
+
+        {/* Link Stats Tab */}
+        {activeTab === 'stats' && (
+          <ClickStatsManager />
         )}
       </div>
     </div>

@@ -219,3 +219,63 @@ export async function setSystemConfig(key, value, type = 'string', description =
   return response.json();
 }
 
+/**
+ * 记录点击统计
+ */
+export async function recordClickStat(statData) {
+  const response = await fetch(`${API_URL}/api/click-stats`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(statData),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to record click stat');
+  }
+  return response.json();
+}
+
+/**
+ * 获取点击统计
+ */
+export async function getClickStats(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.target_url) params.append('target_url', filters.target_url);
+  if (filters.page_type) params.append('page_type', filters.page_type);
+  if (filters.start_date) params.append('start_date', filters.start_date);
+  if (filters.end_date) params.append('end_date', filters.end_date);
+  if (filters.limit) params.append('limit', filters.limit);
+  
+  const response = await fetch(`${API_URL}/api/click-stats?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch click stats');
+  }
+  return response.json();
+}
+
+/**
+ * 获取详细点击记录
+ */
+export async function getClickStatsDetail(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.target_url) params.append('target_url', filters.target_url);
+  if (filters.page_type) params.append('page_type', filters.page_type);
+  if (filters.start_date) params.append('start_date', filters.start_date);
+  if (filters.end_date) params.append('end_date', filters.end_date);
+  if (filters.limit) params.append('limit', filters.limit);
+  
+  const response = await fetch(`${API_URL}/api/click-stats/detail?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch click stats detail');
+  }
+  return response.json();
+}
+
