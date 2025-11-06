@@ -42,7 +42,32 @@ export default function ProductConfigManager() {
   const handleSave = async () => {
     try {
       setError(null);
-      await upsertProductConfig(formData);
+      
+      // 根据页面类型设置 product_id
+      let productId = 0;
+      if (formData.page_type === 'product') {
+        productId = parseInt(formData.product_id) || 0;
+        if (!productId) {
+          setError('Please select a product');
+          return;
+        }
+      } else if (formData.page_type === 'home') {
+        productId = 0;
+      } else if (formData.page_type === 'page') {
+        productId = -1; // 使用 -1 表示单页面
+        if (!formData.page_path) {
+          setError('Please enter a page path');
+          return;
+        }
+      }
+      
+      const configData = {
+        ...formData,
+        product_id: productId,
+        page_path: formData.page_type === 'page' ? formData.page_path : null,
+      };
+      
+      await upsertProductConfig(configData);
       await loadData();
       setEditingConfig(null);
       setFormData({
