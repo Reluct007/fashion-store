@@ -7,7 +7,6 @@ import {
 import { getProduct, getProducts } from '../lib/api';
 import CountdownTimer from '../components/common/CountdownTimer';
 import SocialShare from '../components/common/SocialShare';
-import PaymentMethods from '../components/common/PaymentMethods';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
@@ -302,9 +301,6 @@ export default function ProductDetail() {
             </div>
           )}
         </div>
-
-        {/* Payment Methods */}
-        <PaymentMethods />
       </main>
       <Footer />
     </div>

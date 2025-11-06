@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
 import SubscribeForm from './SubscribeForm';
+import PaymentMethods from './PaymentMethods';
 
 export default function Footer({ data = {} }) {
   const footerData = {
@@ -128,51 +129,57 @@ export default function Footer({ data = {} }) {
           </div>
         </div>
 
-        {/* Social Media & Copyright */}
+        {/* Payment Methods & Bottom Section */}
         <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            {/* Social Media */}
-            <div className="flex items-center gap-4">
-              <a 
-                href={footerData.social.facebook} 
-                className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a 
-                href={footerData.social.instagram} 
-                className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a 
-                href={footerData.social.twitter} 
-                className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
-              </a>
-            </div>
-
-            {/* Legal Links */}
-            <div className="flex flex-wrap gap-4 text-sm">
-              {footerData.links.legal.map((link, index) => (
-                <Link 
-                  key={index} 
-                  to={link.href} 
-                  className="hover:text-rose-500 transition-colors"
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            {/* Left: Social Media & Copyright */}
+            <div className="flex flex-col gap-4">
+              {/* Social Media */}
+              <div className="flex items-center gap-4">
+                <a 
+                  href={footerData.social.facebook} 
+                  className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
+                  aria-label="Facebook"
                 >
-                  {link.label}
-                </Link>
-              ))}
+                  <Facebook className="w-5 h-5" />
+                </a>
+                <a 
+                  href={footerData.social.instagram} 
+                  className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-5 h-5" />
+                </a>
+                <a 
+                  href={footerData.social.twitter} 
+                  className="p-2 bg-gray-800 rounded-full hover:bg-rose-600 transition-colors"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="w-5 h-5" />
+                </a>
+              </div>
+
+              {/* Copyright */}
+              <p className="text-sm text-gray-500">
+                © {new Date().getFullYear()} {footerData.brand}. All rights reserved.
+              </p>
             </div>
 
-            {/* Copyright */}
-            <p className="text-sm text-gray-500">
-              © {new Date().getFullYear()} {footerData.brand}. All rights reserved.
-            </p>
+            {/* Right: Payment Methods */}
+            <PaymentMethods />
+          </div>
+
+          {/* Legal Links */}
+          <div className="flex flex-wrap gap-4 text-sm mt-6 pt-6 border-t border-gray-800">
+            {footerData.links.legal.map((link, index) => (
+              <Link 
+                key={index} 
+                to={link.href} 
+                className="hover:text-rose-500 transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
