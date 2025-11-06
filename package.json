@@ -1,0 +1,22 @@
+{
+  "name": "fashion-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fashion Store - Monorepo with Frontend and Backend",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "dev:backend": "npm run dev --workspace=backend",
+    "build": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "deploy:frontend": "cd frontend && npm run build && wrangler pages deploy dist",
+    "deploy:backend": "npm run deploy --workspace=backend",
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

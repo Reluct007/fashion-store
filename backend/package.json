@@ -1,0 +1,18 @@
+{
+  "name": "fashion-store-backend",
+  "version": "1.0.0",
+  "description": "Fashion Store Backend API - Cloudflare Workers",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}
+
