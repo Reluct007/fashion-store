@@ -190,7 +190,7 @@ export default function Admin() {
             }`}
           >
             <Settings className="w-5 h-5 inline mr-2" />
-            Button Configs
+            Link Configs
           </button>
         </div>
 

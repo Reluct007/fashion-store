@@ -91,7 +91,7 @@ export default function ProductConfigManager() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Button Configuration</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Link Configuration</h2>
         <button
           onClick={() => {
             setEditingConfig(null);
@@ -140,14 +140,17 @@ export default function ProductConfigManager() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Button Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Trigger Type</label>
               <select
                 value={formData.button_type}
                 onChange={(e) => setFormData({ ...formData, button_type: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
               >
-                <option value="add_to_cart">Add to Cart</option>
-                <option value="buy_now">Buy Now</option>
+                <option value="add_to_cart">Add to Cart Button</option>
+                <option value="buy_now">Buy Now Button</option>
+                <option value="product_image">Product Image</option>
+                <option value="product_title">Product Title</option>
+                <option value="custom">Custom Element</option>
               </select>
             </div>
             <div>
@@ -233,7 +236,7 @@ export default function ProductConfigManager() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Button Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trigger Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Target</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -250,7 +253,7 @@ export default function ProductConfigManager() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm text-gray-500 capitalize">
-                      {config.button_type.replace('_', ' ')}
+                      {config.button_type.replace(/_/g, ' ')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
