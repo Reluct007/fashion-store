@@ -440,6 +440,96 @@ async function getOrders(request) {
   });
 }
 
+// 记录点击统计
+async function recordClickStatHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  try {
+    const data = await request.json();
+    const clientIP = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'unknown';
+    const userAgent = request.headers.get('User-Agent') || '';
+    const referer = request.headers.get('Referer') || '';
+    
+    const statData = {
+      target_url: data.target_url,
+      page_type: data.page_type || 'unknown',
+      page_id: data.page_id || null,
+      page_path: data.page_path || null,
+      user_agent: userAgent,
+      ip_address: clientIP,
+      referer: referer
+    };
+    
+    const result = await recordClickStat(env, statData);
+    
+    return new Response(JSON.stringify({ success: true, id: result?.id }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error recording click stat:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 获取点击统计
+async function getClickStatsHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const filters = {
+    target_url: url.searchParams.get('target_url') || undefined,
+    page_type: url.searchParams.get('page_type') || undefined,
+    start_date: url.searchParams.get('start_date') || undefined,
+    end_date: url.searchParams.get('end_date') || undefined,
+    limit: url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : undefined
+  };
+  
+  const stats = await getClickStats(env, filters);
+  
+  return new Response(JSON.stringify(stats), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 获取详细点击记录
+async function getClickStatsDetailHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const filters = {
+    target_url: url.searchParams.get('target_url') || undefined,
+    page_type: url.searchParams.get('page_type') || undefined,
+    start_date: url.searchParams.get('start_date') || undefined,
+    end_date: url.searchParams.get('end_date') || undefined,
+    limit: url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : 100
+  };
+  
+  const stats = await getClickStatsDetail(env, filters);
+  
+  return new Response(JSON.stringify(stats), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // 主处理函数
 export default {
   async fetch(request, env, ctx) {
