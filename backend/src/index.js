@@ -78,12 +78,56 @@ async function ensureDBInitialized(env) {
 
 // 用户登录
 async function login(request, env) {
-  await ensureDBInitialized(env);
-  
-  const { username, password } = await request.json();
-  
-  if (!env.DB) {
-    // 回退到简单的内存认证
+  try {
+    await ensureDBInitialized(env);
+    
+    const { username, password } = await request.json();
+    
+    // 如果没有数据库配置，使用内存认证作为回退
+    if (!env.DB) {
+      console.log('No database configured, using fallback authentication');
+      if (username === 'admin' && password === 'admin123') {
+        return new Response(JSON.stringify({
+          success: true,
+          token: 'admin_token',
+          user: { id: 1, username: 'admin', role: 'admin' }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // 使用数据库认证
+    console.log('Attempting database authentication for:', username);
+    const user = await authenticateUser(env, username, password);
+    
+    if (!user) {
+      console.log('Authentication failed for:', username);
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    console.log('Authentication successful for:', username);
+    // 生成简单的 token（实际应该使用 JWT）
+    const token = `token_${user.id}_${Date.now()}`;
+    
+    return new Response(JSON.stringify({
+      success: true,
+      token,
+      user
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    // 如果数据库出错，回退到内存认证
+    const { username, password } = await request.json();
     if (username === 'admin' && password === 'admin123') {
       return new Response(JSON.stringify({
         success: true,
@@ -93,30 +137,11 @@ async function login(request, env) {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-      status: 401,
+    return new Response(JSON.stringify({ error: 'Login failed: ' + error.message }), {
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
-  
-  const user = await authenticateUser(env, username, password);
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  }
-  
-  // 生成简单的 token（实际应该使用 JWT）
-  const token = `token_${user.id}_${Date.now()}`;
-  
-  return new Response(JSON.stringify({
-    success: true,
-    token,
-    user
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
 }
 
 // 获取产品列表

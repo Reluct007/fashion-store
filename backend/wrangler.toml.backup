@@ -9,7 +9,7 @@ ENVIRONMENT = "production"
 [[d1_databases]]
 binding = "DB"
 database_name = "fashion-store-db"
-database_id = "9f09384e-1afb-45ff-ac2a-11d34c11a986" # 需要在 Cloudflare Dashboard 中创建数据库后填入
+database_id = "" # 需要在 Cloudflare Dashboard 中创建数据库后填入
 
 # 注意：如果需要自定义路由，取消下面的注释并配置您的域名
 # [[routes]]

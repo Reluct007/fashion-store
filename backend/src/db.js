@@ -47,13 +47,16 @@ export async function initDatabase(env) {
     `);
 
     // 检查是否有管理员用户
-    const adminCheck = await env.DB.prepare('SELECT * FROM users WHERE role = ?').bind('admin').first();
+    const adminCheck = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind('admin').first();
     if (!adminCheck) {
-      // 创建默认管理员（密码：admin123，需要修改）
-      const defaultPassword = 'admin123'; // 实际应该使用 bcrypt 加密
+      // 创建默认管理员（密码：admin123，存储为明文以便验证）
+      const defaultPassword = 'admin123'; // 实际应该使用 bcrypt 加密，但为了简化这里存储明文
       await env.DB.prepare(
         'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)'
       ).bind('admin', 'admin@fashionstore.com', defaultPassword, 'admin').run();
+      console.log('Default admin user created');
+    } else {
+      console.log('Admin user already exists');
     }
 
     // 插入默认系统配置
@@ -73,14 +76,23 @@ export async function initDatabase(env) {
  * 用户认证
  */
 export async function authenticateUser(env, username, password) {
-  if (!env.DB) return null;
+  if (!env.DB) {
+    console.log('No database available for authentication');
+    return null;
+  }
 
   try {
+    console.log('Querying database for user:', username);
     const user = await env.DB.prepare(
       'SELECT * FROM users WHERE username = ? OR email = ?'
     ).bind(username, username).first();
 
-    if (!user) return null;
+    if (!user) {
+      console.log('User not found:', username);
+      return null;
+    }
+
+    console.log('User found:', user.username, 'Password match:', user.password_hash === password);
 
     // 简单的密码验证（实际应该使用 bcrypt）
     if (user.password_hash === password) {
@@ -92,6 +104,7 @@ export async function authenticateUser(env, username, password) {
       };
     }
 
+    console.log('Password mismatch for user:', username);
     return null;
   } catch (error) {
     console.error('Authentication error:', error);

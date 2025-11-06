@@ -34,10 +34,10 @@ CREATE TABLE IF NOT EXISTS system_configs (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 插入默认管理员用户（密码：admin123，需要在实际使用中修改）
--- 密码哈希使用 bcrypt，这里只是示例，实际应该使用安全的哈希算法
+-- 插入默认管理员用户（密码：admin123，存储为明文）
+-- 注意：生产环境应该使用 bcrypt 等安全的哈希算法
 INSERT OR IGNORE INTO users (username, email, password_hash, role) 
-VALUES ('admin', 'admin@fashionstore.com', '$2b$10$rOzJqCqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZqQZ', 'admin');
+VALUES ('admin', 'admin@fashionstore.com', 'admin123', 'admin');
 
 -- 插入默认系统配置
 INSERT OR IGNORE INTO system_configs (config_key, config_value, config_type, description) VALUES
