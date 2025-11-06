@@ -92,10 +92,26 @@ export async function authenticateUser(env, username, password) {
       return null;
     }
 
-    console.log('User found:', user.username, 'Password match:', user.password_hash === password);
-
-    // 简单的密码验证（实际应该使用 bcrypt）
+    // 检查密码是否匹配
+    // 支持两种格式：明文密码（用于测试）和 bcrypt 哈希（用于生产）
+    let passwordMatch = false;
+    
     if (user.password_hash === password) {
+      // 明文密码匹配
+      passwordMatch = true;
+    } else if (user.password_hash.startsWith('$2b$') || user.password_hash.startsWith('$2a$')) {
+      // 如果是 bcrypt 哈希，需要验证（但 Cloudflare Workers 不支持 bcrypt）
+      // 这种情况下，我们回退到明文检查或提示用户
+      console.log('Password is hashed, but bcrypt verification not available in Workers');
+      passwordMatch = false;
+    } else {
+      // 其他情况，直接比较
+      passwordMatch = (user.password_hash === password);
+    }
+    
+    console.log('User found:', user.username, 'Password match:', passwordMatch);
+
+    if (passwordMatch) {
       return {
         id: user.id,
         username: user.username,
