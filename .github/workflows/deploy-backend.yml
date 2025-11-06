@@ -1,12 +1,14 @@
 name: Deploy Backend to Cloudflare Workers
 
+# 改为手动触发
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'backend/**'
+  #     - '.github/workflows/deploy-backend.yml'
 
 jobs:
   deploy:
