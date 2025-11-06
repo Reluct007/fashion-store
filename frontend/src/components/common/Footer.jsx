@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import SubscribeForm from './SubscribeForm';
 
 export default function Footer({ data = {} }) {
   const footerData = {
@@ -106,7 +107,7 @@ export default function Footer({ data = {} }) {
           {/* Customer Service Links */}
           <div>
             <h3 className="text-white font-semibold mb-4">Customer Service</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 mb-6">
               {footerData.links.customer.map((link, index) => (
                 <li key={index}>
                   <Link to={link.href} className="hover:text-rose-500 transition-colors">
@@ -115,6 +116,15 @@ export default function Footer({ data = {} }) {
                 </li>
               ))}
             </ul>
+            
+            {/* Newsletter Subscription */}
+            <div>
+              <h3 className="text-white font-semibold mb-4">Newsletter</h3>
+              <p className="text-sm text-gray-400 mb-3">
+                Subscribe to get special offers and updates
+              </p>
+              <SubscribeForm variant="footer" />
+            </div>
           </div>
         </div>
 

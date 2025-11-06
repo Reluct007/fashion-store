@@ -5,7 +5,8 @@ main = "src/index.js"
 [vars]
 ENVIRONMENT = "production"
 
-[[routes]]
-pattern = "api.fashion-store.com/*"
-zone_name = "fashion-store.com"
+# 注意：如果需要自定义路由，取消下面的注释并配置您的域名
+# [[routes]]
+# pattern = "api.yourdomain.com/*"
+# zone_name = "yourdomain.com"
 

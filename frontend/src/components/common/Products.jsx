@@ -1,12 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
+import { getProducts } from '../../lib/api';
 
 export default function Products({ data = {} }) {
   const [favorites, setFavorites] = useState(new Set());
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample products data
-  const products = data.products || [
+  // 从 API 加载产品数据
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const apiProducts = await getProducts();
+      setProducts(apiProducts);
+    } catch (err) {
+      console.error('Error loading products:', err);
+      // 如果 API 失败，使用示例数据作为后备
+      setProducts([
     {
       id: 1,
       name: 'Elegant Summer Dress',
@@ -67,7 +82,11 @@ export default function Products({ data = {} }) {
       category: 'Accessories',
       onSale: true
     }
-  ];
+  ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleFavorite = (id) => {
     const newFavorites = new Set(favorites);
@@ -91,6 +110,11 @@ export default function Products({ data = {} }) {
           </p>
         </div>
 
+        {loading ? (
+          <div className="text-center py-12 text-gray-600">Loading products...</div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12 text-gray-600">No products available.</div>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((product) => (
             <div key={product.id} className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
@@ -119,7 +143,11 @@ export default function Products({ data = {} }) {
               {/* Product Info */}
               <div className="p-6">
                 <p className="text-sm text-gray-500 mb-2">{product.category}</p>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                  <Link to={`/product/${product.id}`}>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-rose-600 transition-colors">
+                      {product.name}
+                    </h3>
+                  </Link>
                 
                 {/* Rating */}
                 <div className="flex items-center gap-2 mb-3">
@@ -151,14 +179,18 @@ export default function Products({ data = {} }) {
                 </div>
 
                 {/* Add to Cart Button */}
-                <button className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-lg hover:bg-rose-700 transition-colors font-semibold">
+                <Link
+                  to={`/product/${product.id}`}
+                  className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-lg hover:bg-rose-700 transition-colors font-semibold"
+                >
                   <ShoppingCart className="w-5 h-5" />
-                  Add to Cart
-                </button>
+                  View Details
+                </Link>
               </div>
             </div>
           ))}
         </div>
+        )}
 
         {/* View All Button */}
         <div className="text-center mt-12">

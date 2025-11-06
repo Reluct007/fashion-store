@@ -1,4 +1,5 @@
 import { getCurrentTemplate } from '../../config/template-config';
+import Newsletter from '../components/common/Newsletter';
 
 // 直接导入模板组件（React 中使用静态导入）
 import FashionTemplate from '../../templates/fashion';
@@ -43,6 +44,7 @@ export default function Home() {
       <main className="flex-grow">
         <Hero data={pageData.hero} />
         <Products data={pageData.products} />
+        <Newsletter />
       </main>
       <Footer />
     </div>

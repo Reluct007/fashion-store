@@ -4,10 +4,13 @@ import {
   Package, Users, ShoppingCart, TrendingUp, 
   Plus, Edit, Trash2, Save, X 
 } from 'lucide-react';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '../lib/api';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -19,30 +22,24 @@ export default function Admin() {
     onSale: false
   });
 
-  // Sample data
+  // 从 API 加载产品数据
   useEffect(() => {
-    setProducts([
-      {
-        id: 1,
-        name: 'Elegant Summer Dress',
-        price: 89.99,
-        originalPrice: 129.99,
-        category: 'Dresses',
-        description: 'Beautiful summer dress',
-        image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400',
-        onSale: true
-      },
-      {
-        id: 2,
-        name: 'Classic White Shirt',
-        price: 49.99,
-        category: 'Tops',
-        description: 'Classic white shirt',
-        image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=400',
-        onSale: false
-      }
-    ]);
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getProducts();
+      setProducts(data);
+    } catch (err) {
+      setError('Failed to load products: ' + err.message);
+      console.error('Error loading products:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (product) => {
     setEditingProduct(product.id);
@@ -57,37 +54,51 @@ export default function Admin() {
     });
   };
 
-  const handleSave = () => {
-    if (editingProduct) {
-      setProducts(products.map(p => 
-        p.id === editingProduct 
-          ? { ...p, ...formData, price: parseFloat(formData.price), originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null }
-          : p
-      ));
-    } else {
-      const newProduct = {
-        id: Date.now(),
+  const handleSave = async () => {
+    try {
+      setError(null);
+      const productData = {
         ...formData,
         price: parseFloat(formData.price),
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
       };
-      setProducts([...products, newProduct]);
+      
+      if (editingProduct) {
+        await updateProduct(editingProduct, productData);
+      } else {
+        await createProduct(productData);
+      }
+      
+      // 重新加载产品列表
+      await loadProducts();
+      
+      // 重置表单
+      setEditingProduct(null);
+      setFormData({
+        name: '',
+        price: '',
+        originalPrice: '',
+        category: '',
+        description: '',
+        image: '',
+        onSale: false
+      });
+    } catch (err) {
+      setError('Failed to save product: ' + err.message);
+      console.error('Error saving product:', err);
     }
-    setEditingProduct(null);
-    setFormData({
-      name: '',
-      price: '',
-      originalPrice: '',
-      category: '',
-      description: '',
-      image: '',
-      onSale: false
-    });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(p => p.id !== id));
+      try {
+        setError(null);
+        await deleteProduct(id);
+        await loadProducts();
+      } catch (err) {
+        setError('Failed to delete product: ' + err.message);
+        console.error('Error deleting product:', err);
+      }
     }
   };
 
@@ -114,6 +125,13 @@ export default function Admin() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+        
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b">
           <button
@@ -334,6 +352,11 @@ export default function Admin() {
 
             {/* Products List */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center text-gray-600">Loading products...</div>
+              ) : products.length === 0 ? (
+                <div className="p-8 text-center text-gray-600">No products found. Add your first product!</div>
+              ) : (
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -388,6 +411,7 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
         )}

@@ -120,32 +120,84 @@ wrangler pages deploy dist --project-name=fashion-store
 
 ## 步骤 7: 部署后端（Cloudflare Workers）
 
-### 方式 A: 通过 GitHub Actions（推荐）
+### 方式 A: 通过 Cloudflare Dashboard（推荐，最简单）
 
-1. 确保已配置 GitHub Secrets（步骤 5）
-2. 推送代码到 GitHub：
+1. **登录 Cloudflare Dashboard**
+   - 访问 https://dash.cloudflare.com/
+   - 登录您的账号
+
+2. **创建 Worker**
+   - 在左侧菜单选择 "Workers & Pages"
+   - 点击 "Create application"
+   - 选择 "Workers"
+   - 点击 "Create Worker"
+
+3. **配置 Worker**
+   - **Worker name**: `fashion-store-api`
+   - 点击 "Deploy" 先创建一个空 Worker
+
+4. **上传代码**
+   - 在 Worker 页面，点击 "Quick edit" 或 "Edit code"
+   - 打开 `backend/src/index.js` 文件，复制全部内容
+   - 粘贴到 Cloudflare Dashboard 的编辑器中
+   - 点击 "Save and deploy"
+
+5. **获取 Worker URL**
+   - 部署成功后，在 Worker 页面可以看到 URL
+   - 格式类似：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
+
+### 方式 B: 使用 Wrangler CLI（本地部署）
+
+1. **安装依赖**（如果还没安装）：
    ```bash
+   cd backend
+   npm install
+   ```
+
+2. **登录 Cloudflare**：
+   ```bash
+   npx wrangler login
+   ```
+   - 这会打开浏览器，登录并授权
+
+3. **部署 Worker**：
+   ```bash
+   npm run deploy
+   ```
+   或
+   ```bash
+   npx wrangler deploy
+   ```
+
+4. **查看部署结果**：
+   - 部署成功后会显示 Worker URL
+   - 格式类似：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
+
+### 方式 C: 通过 GitHub Actions（自动部署）
+
+1. **确保已配置 GitHub Secrets**（步骤 5）
+2. **推送代码到 GitHub**：
+   ```bash
+   git add backend/
+   git commit -m "Add backend API"
    git push origin main
    ```
-3. GitHub Actions 会自动检测 `backend/` 目录的变更并部署
+3. **GitHub Actions 会自动部署**
+   - 进入 GitHub 仓库的 "Actions" 标签页
+   - 查看 "Deploy Backend to Cloudflare Workers" workflow
+   - 等待部署完成
 
-### 方式 B: 手动部署
+### 配置 Workers 路由（可选，需要自定义域名）
 
-```bash
-cd backend
-npm install
-npm run deploy
-```
-
-### 配置 Workers 路由（可选）
-
-在 `backend/wrangler.toml` 中配置自定义路由：
+如果需要使用自定义域名，在 `backend/wrangler.toml` 中配置：
 
 ```toml
 [[routes]]
 pattern = "api.yourdomain.com/*"
 zone_name = "yourdomain.com"
 ```
+
+**注意**：需要先在 Cloudflare 添加域名并配置 DNS。
 
 ## 步骤 8: 验证部署
 
@@ -164,11 +216,27 @@ zone_name = "yourdomain.com"
 
 ### 连接前后端
 
-1. 在前端 `.env` 文件中配置后端 API URL：
+1. **获取后端 API URL**
+   - 部署成功后，Worker URL 会显示在 Cloudflare Dashboard
+   - 格式：`https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev`
+
+2. **配置前端环境变量**
+   - 在 `frontend/` 目录创建 `.env` 文件（如果不存在）
+   - 添加以下内容：
+     ```
+     VITE_API_URL=https://fashion-store-api.YOUR_SUBDOMAIN.workers.dev
+     ```
+   - 替换 `YOUR_SUBDOMAIN` 为您的实际子域名
+
+3. **重新构建和部署前端**
+   ```bash
+   cd frontend
+   npm run build
    ```
-   VITE_API_URL=https://fashion-store-api.your-subdomain.workers.dev
-   ```
-2. 重新构建前端并部署
+   - 如果使用 GitHub Actions，推送代码会自动重新部署
+   - 如果使用 Cloudflare Dashboard，重新部署项目
+
+**注意**：前端代码已经集成了 API 调用功能，配置环境变量后即可使用。
 
 ## 自定义域名（可选）
 
