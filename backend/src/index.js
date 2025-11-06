@@ -320,19 +320,20 @@ async function upsertProductConfigHandler(request, env) {
     });
   }
   
-  const data = await request.json();
-  const result = await upsertProductConfig(env, data);
-  
-  if (!result) {
-    return new Response(JSON.stringify({ error: 'Failed to save config' }), {
+  try {
+    const data = await request.json();
+    const result = await upsertProductConfig(env, data);
+    
+    return new Response(JSON.stringify({ success: true, data: result }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error in upsertProductConfigHandler:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to save config' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
-  
-  return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-  });
 }
 
 // 删除产品配置

@@ -165,7 +165,9 @@ export async function getAllProductConfigs(env) {
  * 创建或更新产品配置
  */
 export async function upsertProductConfig(env, config) {
-  if (!env.DB) return null;
+  if (!env.DB) {
+    throw new Error('Database not configured');
+  }
 
   try {
     // 检查是否有 page_path 列（向后兼容）
@@ -181,57 +183,75 @@ export async function upsertProductConfig(env, config) {
     if (!hasPagePath) {
       try {
         await env.DB.prepare('ALTER TABLE product_configs ADD COLUMN page_path TEXT').run();
-      } catch {
-        // 如果添加失败，忽略（可能是旧版本 SQLite）
+        hasPagePath = true;
+      } catch (e) {
+        // 如果添加失败，忽略（可能是旧版本 SQLite 或不支持 ALTER TABLE）
+        console.log('Could not add page_path column:', e.message);
       }
     }
     
-    const sql = hasPagePath || true
-      ? `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, page_path, is_enabled)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(product_id, button_type) 
-         DO UPDATE SET 
-           action_type = excluded.action_type,
-           target_url = excluded.target_url,
-           api_endpoint = excluded.api_endpoint,
-           page_path = excluded.page_path,
-           is_enabled = excluded.is_enabled,
-           updated_at = CURRENT_TIMESTAMP`
-      : `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, is_enabled)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(product_id, button_type) 
-         DO UPDATE SET 
-           action_type = excluded.action_type,
-           target_url = excluded.target_url,
-           api_endpoint = excluded.api_endpoint,
-           is_enabled = excluded.is_enabled,
-           updated_at = CURRENT_TIMESTAMP`;
+    // 准备 SQL 和参数
+    let sql, params;
     
-    const params = hasPagePath || true
-      ? [
-          config.product_id,
-          config.button_type,
-          config.action_type,
-          config.target_url || null,
-          config.api_endpoint || null,
-          config.page_path || null,
-          config.is_enabled !== undefined ? config.is_enabled : 1
-        ]
-      : [
-          config.product_id,
-          config.button_type,
-          config.action_type,
-          config.target_url || null,
-          config.api_endpoint || null,
-          config.is_enabled !== undefined ? config.is_enabled : 1
-        ];
+    if (hasPagePath) {
+      sql = `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, page_path, is_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(product_id, button_type) 
+             DO UPDATE SET 
+               action_type = excluded.action_type,
+               target_url = excluded.target_url,
+               api_endpoint = excluded.api_endpoint,
+               page_path = excluded.page_path,
+               is_enabled = excluded.is_enabled,
+               updated_at = CURRENT_TIMESTAMP`;
+      params = [
+        config.product_id,
+        config.button_type,
+        config.action_type,
+        config.target_url || null,
+        config.api_endpoint || null,
+        config.page_path || null,
+        config.is_enabled !== undefined ? (config.is_enabled ? 1 : 0) : 1
+      ];
+    } else {
+      sql = `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, is_enabled)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(product_id, button_type) 
+             DO UPDATE SET 
+               action_type = excluded.action_type,
+               target_url = excluded.target_url,
+               api_endpoint = excluded.api_endpoint,
+               is_enabled = excluded.is_enabled,
+               updated_at = CURRENT_TIMESTAMP`;
+      params = [
+        config.product_id,
+        config.button_type,
+        config.action_type,
+        config.target_url || null,
+        config.api_endpoint || null,
+        config.is_enabled !== undefined ? (config.is_enabled ? 1 : 0) : 1
+      ];
+    }
     
     const result = await env.DB.prepare(sql).bind(...params).run();
 
-    return result;
+    // 返回配置对象（包含 ID）
+    if (result.meta && result.meta.last_row_id) {
+      // 如果是新插入的记录，获取完整记录
+      const inserted = await env.DB.prepare(
+        'SELECT * FROM product_configs WHERE id = ?'
+      ).bind(result.meta.last_row_id).first();
+      return inserted;
+    } else {
+      // 如果是更新，获取更新后的记录
+      const updated = await env.DB.prepare(
+        'SELECT * FROM product_configs WHERE product_id = ? AND button_type = ?'
+      ).bind(config.product_id, config.button_type).first();
+      return updated;
+    }
   } catch (error) {
     console.error('Upsert product config error:', error);
-    return null;
+    throw error; // 抛出错误而不是返回 null
   }
 }
 

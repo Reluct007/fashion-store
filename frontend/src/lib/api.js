@@ -172,7 +172,8 @@ export async function upsertProductConfig(config) {
     body: JSON.stringify(config),
   });
   if (!response.ok) {
-    throw new Error('Failed to save product config');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to save product config');
   }
   return response.json();
 }
