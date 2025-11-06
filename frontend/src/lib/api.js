@@ -114,3 +114,108 @@ export async function healthCheck() {
   return response.json();
 }
 
+/**
+ * 获取认证 token
+ */
+function getAuthToken() {
+  return localStorage.getItem('auth_token');
+}
+
+/**
+ * 获取认证 headers
+ */
+function getAuthHeaders() {
+  const token = getAuthToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+  };
+}
+
+/**
+ * 用户登录
+ */
+export async function login(username, password) {
+  const response = await fetch(`${API_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!response.ok) {
+    throw new Error('Login failed');
+  }
+  return response.json();
+}
+
+/**
+ * 获取所有产品配置
+ */
+export async function getProductConfigs() {
+  const response = await fetch(`${API_URL}/api/product-configs`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch product configs');
+  }
+  return response.json();
+}
+
+/**
+ * 创建或更新产品配置
+ */
+export async function upsertProductConfig(config) {
+  const response = await fetch(`${API_URL}/api/product-configs`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(config),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to save product config');
+  }
+  return response.json();
+}
+
+/**
+ * 删除产品配置
+ */
+export async function deleteProductConfig(id) {
+  const response = await fetch(`${API_URL}/api/product-configs/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to delete product config');
+  }
+  return response.json();
+}
+
+/**
+ * 获取系统配置
+ */
+export async function getSystemConfigs() {
+  const response = await fetch(`${API_URL}/api/system-configs`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch system configs');
+  }
+  return response.json();
+}
+
+/**
+ * 设置系统配置
+ */
+export async function setSystemConfig(key, value, type = 'string', description = null) {
+  const response = await fetch(`${API_URL}/api/system-configs`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ key, value, type, description }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to set system config');
+  }
+  return response.json();
+}
+

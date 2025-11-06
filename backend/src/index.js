@@ -3,7 +3,9 @@
  * Cloudflare Workers 后端服务
  */
 
-// 简单的内存存储（生产环境应该使用 Cloudflare D1 数据库）
+import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig } from './db.js';
+
+// 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
 let products = [
   {
     id: 1,
@@ -29,6 +31,7 @@ let products = [
 ];
 
 let orders = [];
+let dbInitialized = false;
 
 // CORS 配置
 const corsHeaders = {
@@ -48,14 +51,94 @@ function handleCORS(request) {
   return null;
 }
 
+// 验证 JWT token（简化版，实际应该使用真正的 JWT）
+async function verifyAuth(request, env) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  // 简化版认证（实际应该使用 JWT）
+  const token = authHeader.substring(7);
+  // 这里只是示例，实际应该验证 token
+  if (token === 'admin_token') {
+    return { id: 1, username: 'admin', role: 'admin' };
+  }
+  
+  return null;
+}
+
+// 初始化数据库
+async function ensureDBInitialized(env) {
+  if (!dbInitialized && env.DB) {
+    await initDatabase(env);
+    dbInitialized = true;
+  }
+}
+
+// 用户登录
+async function login(request, env) {
+  await ensureDBInitialized(env);
+  
+  const { username, password } = await request.json();
+  
+  if (!env.DB) {
+    // 回退到简单的内存认证
+    if (username === 'admin' && password === 'admin123') {
+      return new Response(JSON.stringify({
+        success: true,
+        token: 'admin_token',
+        user: { id: 1, username: 'admin', role: 'admin' }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const user = await authenticateUser(env, username, password);
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  // 生成简单的 token（实际应该使用 JWT）
+  const token = `token_${user.id}_${Date.now()}`;
+  
+  return new Response(JSON.stringify({
+    success: true,
+    token,
+    user
+  }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // 获取产品列表
-async function getProducts(request) {
+async function getProducts(request, env) {
+  await ensureDBInitialized(env);
+  
   const url = new URL(request.url);
   const category = url.searchParams.get('category');
   
   let filteredProducts = products;
   if (category) {
     filteredProducts = products.filter(p => p.category === category);
+  }
+  
+  // 获取每个产品的按钮配置
+  if (env.DB) {
+    for (const product of filteredProducts) {
+      const config = await getProductConfig(env, product.id, 'add_to_cart');
+      if (config) {
+        product.buttonConfig = config;
+      }
+    }
   }
   
   return new Response(JSON.stringify(filteredProducts), {
@@ -67,7 +150,9 @@ async function getProducts(request) {
 }
 
 // 获取单个产品
-async function getProduct(request) {
+async function getProduct(request, env) {
+  await ensureDBInitialized(env);
+  
   const url = new URL(request.url);
   const id = parseInt(url.pathname.split('/').pop());
   
@@ -81,6 +166,14 @@ async function getProduct(request) {
         'Content-Type': 'application/json',
       },
     });
+  }
+  
+  // 获取按钮配置
+  if (env.DB) {
+    const config = await getProductConfig(env, id, 'add_to_cart');
+    if (config) {
+      product.buttonConfig = config;
+    }
   }
   
   return new Response(JSON.stringify(product), {
@@ -167,6 +260,129 @@ async function deleteProduct(request) {
   });
 }
 
+// 获取产品配置列表
+async function getProductConfigs(request, env) {
+  await ensureDBInitialized(env);
+  
+  if (!env.DB) {
+    return new Response(JSON.stringify([]), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const configs = await getAllProductConfigs(env);
+  return new Response(JSON.stringify(configs), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 创建或更新产品配置
+async function upsertProductConfigHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  if (!env.DB) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const data = await request.json();
+  const result = await upsertProductConfig(env, data);
+  
+  if (!result) {
+    return new Response(JSON.stringify({ error: 'Failed to save config' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  return new Response(JSON.stringify({ success: true, id: result.meta.last_row_id }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 删除产品配置
+async function deleteProductConfigHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const id = parseInt(url.pathname.split('/').pop());
+  
+  if (!env.DB) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const success = await deleteProductConfig(env, id);
+  
+  return new Response(JSON.stringify({ success }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 获取系统配置
+async function getSystemConfigs(request, env) {
+  await ensureDBInitialized(env);
+  
+  if (!env.DB) {
+    return new Response(JSON.stringify({}), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  // 获取所有配置（简化版，实际应该查询所有）
+  return new Response(JSON.stringify({}), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 设置系统配置
+async function setSystemConfigHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const { key, value, type, description } = await request.json();
+  
+  if (!env.DB) {
+    return new Response(JSON.stringify({ error: 'Database not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const success = await setSystemConfig(env, key, value, type, description);
+  
+  return new Response(JSON.stringify({ success }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // 创建订单
 async function createOrder(request) {
   const data = await request.json();
@@ -210,13 +426,40 @@ export default {
     const path = url.pathname;
     
     try {
+      await ensureDBInitialized(env);
+      
+      // 认证 API
+      if (path === '/api/auth/login' && request.method === 'POST') {
+        return login(request, env);
+      }
+      
+      // 产品配置 API
+      if (path.startsWith('/api/product-configs')) {
+        if (request.method === 'GET' && path === '/api/product-configs') {
+          return getProductConfigs(request, env);
+        } else if (request.method === 'POST' && path === '/api/product-configs') {
+          return upsertProductConfigHandler(request, env);
+        } else if (request.method === 'DELETE' && path.startsWith('/api/product-configs/')) {
+          return deleteProductConfigHandler(request, env);
+        }
+      }
+      
+      // 系统配置 API
+      if (path.startsWith('/api/system-configs')) {
+        if (request.method === 'GET' && path === '/api/system-configs') {
+          return getSystemConfigs(request, env);
+        } else if (request.method === 'POST' && path === '/api/system-configs') {
+          return setSystemConfigHandler(request, env);
+        }
+      }
+      
       // 产品 API
       if (path.startsWith('/api/products')) {
         if (request.method === 'GET') {
           if (path === '/api/products') {
-            return getProducts(request);
+            return getProducts(request, env);
           } else {
-            return getProduct(request);
+            return getProduct(request, env);
           }
         } else if (request.method === 'POST' && path === '/api/products') {
           return createProduct(request);
@@ -266,4 +509,3 @@ export default {
     }
   },
 };
-

@@ -20,6 +20,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [buttonConfig, setButtonConfig] = useState(null);
 
   // 促销结束时间（示例：24小时后）
   const saleEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -41,6 +42,11 @@ export default function ProductDetail() {
         .filter(p => p.id !== productData.id && p.category === productData.category)
         .slice(0, 4);
       setRelatedProducts(related);
+      
+      // 检查是否有按钮配置
+      if (productData.buttonConfig) {
+        setButtonConfig(productData.buttonConfig);
+      }
     } catch (err) {
       setError('Failed to load product: ' + err.message);
       console.error('Error loading product:', err);
@@ -50,7 +56,27 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
-    // TODO: 实现购物车功能
+    // 如果配置了按钮跳转，则跳转到指定 URL
+    if (buttonConfig && buttonConfig.action_type === 'link' && buttonConfig.target_url) {
+      window.open(buttonConfig.target_url, buttonConfig.target_url.startsWith('http') ? '_blank' : '_self');
+      return;
+    }
+    
+    // 如果配置了 API 端点，则调用 API
+    if (buttonConfig && buttonConfig.action_type === 'api' && buttonConfig.api_endpoint) {
+      fetch(buttonConfig.api_endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: product.id, quantity }),
+      }).then(() => {
+        alert('Product added successfully!');
+      }).catch(() => {
+        alert('Failed to add product');
+      });
+      return;
+    }
+    
+    // 默认行为：添加到购物车
     alert(`Added ${quantity} x ${product.name} to cart!`);
   };
 

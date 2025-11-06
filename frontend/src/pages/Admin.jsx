@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, ShoppingCart, TrendingUp, 
-  Plus, Edit, Trash2, Save, X 
+  Plus, Edit, Trash2, Save, X, Settings, LogOut
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../lib/api';
+import ProductConfigManager from '../components/ProductConfigManager';
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -115,12 +123,21 @@ export default function Admin() {
       <div className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <Link 
-            to="/"
-            className="px-4 py-2 text-gray-700 hover:text-rose-600 transition-colors"
-          >
-            Back to Store
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link 
+              to="/"
+              className="px-4 py-2 text-gray-700 hover:text-rose-600 transition-colors"
+            >
+              Back to Store
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-rose-600 transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -163,6 +180,17 @@ export default function Admin() {
             }`}
           >
             Orders
+          </button>
+          <button
+            onClick={() => setActiveTab('configs')}
+            className={`px-6 py-3 font-semibold transition-colors ${
+              activeTab === 'configs'
+                ? 'text-rose-600 border-b-2 border-rose-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Settings className="w-5 h-5 inline mr-2" />
+            Button Configs
           </button>
         </div>
 
@@ -422,6 +450,11 @@ export default function Admin() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Orders Management</h2>
             <p className="text-gray-600">Orders management functionality will be implemented here.</p>
           </div>
+        )}
+
+        {/* Button Configs Tab */}
+        {activeTab === 'configs' && (
+          <ProductConfigManager />
         )}
       </div>
     </div>

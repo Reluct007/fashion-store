@@ -5,6 +5,12 @@ main = "src/index.js"
 [vars]
 ENVIRONMENT = "production"
 
+# D1 数据库配置
+[[d1_databases]]
+binding = "DB"
+database_name = "fashion-store-db"
+database_id = "" # 需要在 Cloudflare Dashboard 中创建数据库后填入
+
 # 注意：如果需要自定义路由，取消下面的注释并配置您的域名
 # [[routes]]
 # pattern = "api.yourdomain.com/*"
