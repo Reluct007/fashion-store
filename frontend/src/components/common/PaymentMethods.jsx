@@ -41,7 +41,7 @@ export default function PaymentMethods() {
             alt={icon.alt}
             loading="lazy"
             decoding="async"
-            className="h-10 w-auto object-contain hover:opacity-80 transition-opacity"
+            className="h-6 w-auto md:h-10 md:w-[50px] object-contain hover:opacity-80 transition-opacity"
             role="presentation"
           />
         ))}
