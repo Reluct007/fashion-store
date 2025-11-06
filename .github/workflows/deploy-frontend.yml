@@ -1,14 +1,13 @@
 name: Deploy Frontend to Cloudflare Pages
 
-# 改为手动触发
 on:
-  workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'frontend/**'
-  #     - '.github/workflows/deploy-frontend.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch: # 也支持手动触发
 
 jobs:
   deploy:
