@@ -24,19 +24,27 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Verify index.html is a file
+      - name: Fix index.html if needed
         working-directory: ./frontend
         run: |
+          # 如果 index.html 是目录，删除它
           if [ -d index.html ]; then
-            echo "ERROR: index.html is a directory, removing it"
+            echo "WARNING: index.html is a directory, removing it"
             rm -rf index.html
           fi
+          # 确保 index.html 文件存在且是正确的内容
           if [ ! -f index.html ]; then
             echo "ERROR: index.html does not exist"
             exit 1
           fi
-          echo "index.html is a valid file"
-          ls -la index.html
+          # 验证文件类型
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html is not a regular file"
+            exit 1
+          fi
+          echo "✓ index.html is a valid file"
+          ls -lh index.html
+          head -3 index.html
       
       - name: Install dependencies
         working-directory: ./frontend
