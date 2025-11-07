@@ -28,10 +28,23 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "=== Step 1: Fix index.html after checkout ==="
+          # 检查当前状态
+          if [ -d index.html ]; then
+            echo "WARNING: index.html is a directory, removing..."
+            rm -rf index.html
+          fi
           # 无论是什么，先删除
-          rm -rf index.html 2>&1 || true
+          rm -f index.html 2>&1 || true
           # 直接从 Git 获取内容并写入文件（绕过可能的文件系统问题）
-          git show HEAD:frontend/index.html > index.html
+          echo "Fetching index.html from Git..."
+          git show HEAD:frontend/index.html > index.html.tmp
+          # 确保写入成功
+          if [ ! -f index.html.tmp ]; then
+            echo "ERROR: Failed to fetch index.html from Git"
+            exit 1
+          fi
+          # 移动临时文件到目标位置
+          mv index.html.tmp index.html
           chmod 644 index.html
           # 验证
           if [ ! -f index.html ]; then
@@ -42,7 +55,9 @@ jobs:
             echo "ERROR: index.html is still a directory"
             exit 1
           fi
-          echo "✓ Step 1: index.html is a file ($(stat -c%s index.html) bytes)"
+          echo "✓ Step 1: index.html is a file"
+          ls -lh index.html
+          file index.html
       
       - name: Install dependencies
         working-directory: ./frontend
@@ -52,13 +67,20 @@ jobs:
         working-directory: ./frontend
         run: |
           echo "=== Step 2: Fix index.html before build ==="
+          # 检查当前状态
+          CURRENT_TYPE=$(stat -f "%HT" index.html 2>/dev/null || stat -c "%F" index.html 2>/dev/null || echo "unknown")
+          echo "Current index.html type: $CURRENT_TYPE"
+          
           # 再次检查，如果出问题就重新修复
           if [ -d index.html ] || [ ! -f index.html ]; then
             echo "WARNING: index.html is not a file, re-fixing..."
             rm -rf index.html 2>&1 || true
-            git show HEAD:frontend/index.html > index.html
+            # 使用临时文件方式确保安全
+            git show HEAD:frontend/index.html > index.html.tmp
+            mv index.html.tmp index.html
             chmod 644 index.html
           fi
+          
           # 最终验证
           if [ -d index.html ]; then
             echo "ERROR: index.html is a directory before build!"
@@ -69,9 +91,20 @@ jobs:
             echo "ERROR: index.html does not exist before build!"
             exit 1
           fi
+          
+          # 验证文件内容
+          if ! head -1 index.html | grep -q "doctype"; then
+            echo "WARNING: index.html content may be invalid, re-creating..."
+            rm -f index.html
+            git show HEAD:frontend/index.html > index.html.tmp
+            mv index.html.tmp index.html
+            chmod 644 index.html
+          fi
+          
           echo "✓ Step 2: index.html verified as file"
           ls -lh index.html
           file index.html
+          echo "First 3 lines:"
           head -3 index.html
       
       - name: Build
