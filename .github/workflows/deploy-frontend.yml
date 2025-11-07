@@ -24,29 +24,55 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Ensure index.html is a file (not directory)
+      - name: Force fix index.html (step 1: after checkout)
         working-directory: ./frontend
         run: |
-          # 如果 index.html 是目录，删除它
-          if [ -d index.html ]; then
-            echo "WARNING: index.html is a directory, removing..."
-            rm -rf index.html
-          fi
-          # 如果不存在或不是文件，从 Git 重新检出
+          echo "=== Step 1: Fix index.html after checkout ==="
+          # 无论是什么，先删除
+          rm -rf index.html 2>&1 || true
+          # 直接从 Git 获取内容并写入文件（绕过可能的文件系统问题）
+          git show HEAD:frontend/index.html > index.html
+          chmod 644 index.html
+          # 验证
           if [ ! -f index.html ]; then
-            echo "WARNING: index.html missing or not a file, checking out from Git..."
-            git checkout HEAD -- index.html
-          fi
-          # 验证是文件
-          if [ ! -f index.html ]; then
-            echo "ERROR: Failed to ensure index.html is a file"
+            echo "ERROR: Failed to create index.html as file"
             exit 1
           fi
-          echo "✓ Verified: index.html is a regular file"
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory"
+            exit 1
+          fi
+          echo "✓ Step 1: index.html is a file ($(stat -c%s index.html) bytes)"
       
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
+      
+      - name: Force fix index.html (step 2: before build)
+        working-directory: ./frontend
+        run: |
+          echo "=== Step 2: Fix index.html before build ==="
+          # 再次检查，如果出问题就重新修复
+          if [ -d index.html ] || [ ! -f index.html ]; then
+            echo "WARNING: index.html is not a file, re-fixing..."
+            rm -rf index.html 2>&1 || true
+            git show HEAD:frontend/index.html > index.html
+            chmod 644 index.html
+          fi
+          # 最终验证
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is a directory before build!"
+            ls -la index.html
+            exit 1
+          fi
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist before build!"
+            exit 1
+          fi
+          echo "✓ Step 2: index.html verified as file"
+          ls -lh index.html
+          file index.html
+          head -3 index.html
       
       - name: Build
         working-directory: ./frontend
