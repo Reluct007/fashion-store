@@ -24,33 +24,133 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Ensure index.html exists as file
+      - name: Create index.html file
         working-directory: ./frontend
         run: |
-          # 删除任何可能存在的 index.html（文件或目录）
-          rm -rf index.html 2>/dev/null || true
-          # 直接从 Git 获取内容并创建文件
-          git show HEAD:frontend/index.html > index.html
-          # 验证
-          if [ ! -f index.html ] || [ -d index.html ]; then
-            echo "Error: Failed to create index.html"
+          # 强制删除任何 index.html（文件或目录）
+          echo "Removing any existing index.html..."
+          rm -rf index.html 2>&1 || true
+          
+          # 直接创建 index.html 文件（不依赖 Git）
+          echo "Creating index.html file..."
+          cat > index.html << 'EOF'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
+    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="/" />
+    <title>Fashion Store - Discover Your Style</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+EOF
+          
+          # 验证文件
+          echo "Verifying index.html..."
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory!"
+            ls -la index.html
             exit 1
           fi
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist!"
+            exit 1
+          fi
+          
+          # 验证内容
+          if ! head -1 index.html | grep -qi "doctype"; then
+            echo "ERROR: index.html content is invalid!"
+            head -5 index.html
+            exit 1
+          fi
+          
+          echo "✓ index.html created successfully"
+          ls -lh index.html
+          file index.html
       
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
       
-      - name: Build
+      - name: Verify and fix index.html before build
         working-directory: ./frontend
         run: |
-          # 构建前再次确保 index.html 是文件
-          if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "Fixing index.html before build..."
+          echo "Verifying index.html before build..."
+          
+          # 检查是否是目录
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is a directory! Recreating..."
             rm -rf index.html
-            git show HEAD:frontend/index.html > index.html
+            cat > index.html << 'EOF'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
+    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="/" />
+    <title>Fashion Store - Discover Your Style</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+EOF
           fi
-          npm run build
+          
+          # 检查文件是否存在
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist! Creating..."
+            cat > index.html << 'EOF'
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
+    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="/" />
+    <title>Fashion Store - Discover Your Style</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+EOF
+          fi
+          
+          # 最终验证
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory after fix!"
+            exit 1
+          fi
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist after fix!"
+            exit 1
+          fi
+          
+          echo "✓ index.html verified as file"
+          ls -lh index.html
+          file index.html
+      
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build
       
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
