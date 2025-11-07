@@ -19,6 +19,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
+      - name: Diagnose and fix index.html issue
+        working-directory: ./frontend
+        run: |
+          echo "=== Diagnosing index.html issue ==="
+          echo "Current directory: $(pwd)"
+          echo "Checking index.html status..."
+          ls -la index.html 2>&1 || echo "index.html not found"
+          
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is a directory (this is the bug!)"
+            echo "Removing directory..."
+            rm -rf index.html
+          fi
+          
+          if [ ! -f index.html ]; then
+            echo "index.html missing, creating from Git..."
+            git show HEAD:frontend/index.html > index.html
+          fi
+          
+          # Final verification
+          if [ ! -f index.html ]; then
+            echo "ERROR: Failed to create index.html"
+            exit 1
+          fi
+          
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory after fix"
+            exit 1
+          fi
+          
+          echo "✓ index.html is now a valid file"
+          ls -lh index.html
+          file index.html
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
