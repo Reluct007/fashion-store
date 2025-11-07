@@ -24,47 +24,25 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Fix index.html if needed
+      - name: Ensure index.html is a file
         working-directory: ./frontend
         run: |
-          # 如果 index.html 是目录，删除它并重新创建
-          if [ -d index.html ]; then
-            echo "WARNING: index.html is a directory, removing it"
-            rm -rf index.html
-          fi
-          # 如果 index.html 不存在或不是文件，重新创建
-          if [ ! -f index.html ]; then
-            echo "WARNING: index.html does not exist or is not a file, creating it"
-            cat > index.html << 'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-              <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-              <meta name="robots" content="index, follow" />
-              <link rel="canonical" href="/" />
-              <title>Fashion Store - Discover Your Style</title>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="module" src="/src/main.jsx"></script>
-            </body>
-          </html>
-          EOF
-          fi
+          # 强制删除 index.html（无论是文件还是目录）
+          rm -rf index.html
+          # 从 Git 重新检出 index.html 文件
+          git checkout HEAD -- index.html || {
+            echo "ERROR: Failed to checkout index.html from Git"
+            exit 1
+          }
           # 验证文件类型
           if [ ! -f index.html ]; then
-            echo "ERROR: index.html is still not a regular file after fix attempt"
+            echo "ERROR: index.html is still not a regular file"
             ls -la index.html
             exit 1
           fi
           echo "✓ index.html is a valid file"
           ls -lh index.html
           file index.html
-          head -3 index.html
       
       - name: Install dependencies
         working-directory: ./frontend
