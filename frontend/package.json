@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "bash scripts/fix-index.sh",
-    "build": "vite build",
+    "build": "bash scripts/build.sh",
     "lint": "eslint .",
     "preview": "vite preview",
     "setup:github": "bash scripts/setup-github.sh"
