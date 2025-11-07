@@ -28,33 +28,18 @@ jobs:
         working-directory: ./frontend
         run: |
           # 强制删除任何 index.html（文件或目录）
-          echo "Removing any existing index.html..."
           rm -rf index.html 2>&1 || true
           
-          # 直接创建 index.html 文件（不依赖 Git）
-          echo "Creating index.html file..."
-          printf '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <link rel="icon" type="image/svg+xml" href="/vite.svg" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />\n    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />\n    <meta name="robots" content="index, follow" />\n    <link rel="canonical" href="/" />\n    <title>Fashion Store - Discover Your Style</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.jsx"></script>\n  </body>\n</html>\n' > index.html
+          # 使用脚本创建 index.html
+          bash ../../.github/scripts/create-index-html.sh
           
-          # 验证文件
-          echo "Verifying index.html..."
-          if [ -d index.html ]; then
-            echo "ERROR: index.html is still a directory!"
-            ls -la index.html
-            exit 1
-          fi
-          if [ ! -f index.html ]; then
-            echo "ERROR: index.html does not exist!"
+          # 验证
+          if [ ! -f index.html ] || [ -d index.html ]; then
+            echo "ERROR: Failed to create index.html"
             exit 1
           fi
           
-          # 验证内容
-          if ! head -1 index.html | grep -qi "doctype"; then
-            echo "ERROR: index.html content is invalid!"
-            head -5 index.html
-            exit 1
-          fi
-          
-          echo "✓ index.html created successfully"
+          echo "✓ index.html verified"
           ls -lh index.html
           file index.html
       
@@ -65,45 +50,20 @@ jobs:
       - name: Verify and fix index.html before build
         working-directory: ./frontend
         run: |
-          echo "Verifying index.html before build..."
-          
-          # HTML 内容
-          HTML_CONTENT='<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="/" />
-    <title>Fashion Store - Discover Your Style</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>'
-          
-          # 检查是否是目录或不存在
+          # 如果 index.html 是目录或不存在，重新创建
           if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "ERROR: index.html is a directory or missing! Recreating..."
+            echo "WARNING: index.html is a directory or missing, recreating..."
             rm -rf index.html
-            echo "$HTML_CONTENT" > index.html
+            bash ../../.github/scripts/create-index-html.sh
           fi
           
           # 最终验证
-          if [ -d index.html ]; then
-            echo "ERROR: index.html is still a directory after fix!"
-            exit 1
-          fi
-          if [ ! -f index.html ]; then
-            echo "ERROR: index.html does not exist after fix!"
+          if [ -d index.html ] || [ ! -f index.html ]; then
+            echo "ERROR: index.html is still invalid after fix!"
             exit 1
           fi
           
-          echo "✓ index.html verified as file"
+          echo "✓ index.html verified before build"
           ls -lh index.html
           file index.html
       
