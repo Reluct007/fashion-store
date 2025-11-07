@@ -24,6 +24,20 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Verify index.html is a file
+        working-directory: ./frontend
+        run: |
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is a directory, removing it"
+            rm -rf index.html
+          fi
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist"
+            exit 1
+          fi
+          echo "index.html is a valid file"
+          ls -la index.html
+      
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
