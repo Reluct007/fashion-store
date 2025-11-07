@@ -517,10 +517,10 @@ export default function Admin() {
                     <label className="text-sm font-medium text-gray-700">On Sale</label>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-4 mt-6">
+                <div className="flex gap-4 mt-6">
                   <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
                   >
                     <Save className="w-5 h-5" />
                     Save
@@ -550,7 +550,7 @@ export default function Admin() {
                         status: 'active'
                       });
                     }}
-                    className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     <X className="w-5 h-5" />
                     Cancel
