@@ -18,74 +18,31 @@ jobs:
       deployments: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          # 确保文件系统权限正确，禁用 LFS
-          lfs: false
-          # 使用完整历史记录
-          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       
-      - name: Fix index.html file type issue
+      - name: Ensure index.html is a file (not directory)
         working-directory: ./frontend
         run: |
-          echo "=== Checking index.html status after checkout ==="
-          ls -la index.html 2>&1 || echo "index.html not found after checkout"
-          
-          # 强制删除 index.html（无论是文件还是目录）
-          echo "Removing index.html if it exists (file or directory)..."
-          rm -rf index.html 2>&1 || true
-          
-          # 从 Git 重新检出，确保是文件
-          echo "Checking out index.html from Git..."
-          git checkout HEAD -- index.html 2>&1
-          
-          # 如果仍然失败，手动创建
-          if [ ! -f index.html ]; then
-            echo "WARNING: Git checkout failed, creating index.html manually"
-            cat > index.html << 'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-              <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-              <meta name="robots" content="index, follow" />
-              <link rel="canonical" href="/" />
-              <title>Fashion Store - Discover Your Style</title>
-            </head>
-            <body>
-              <div id="root"></div>
-              <script type="module" src="/src/main.jsx"></script>
-            </body>
-          </html>
-          EOF
-          fi
-          
-          # 最终验证
-          echo "=== Final verification ==="
+          # 如果 index.html 是目录，删除它
           if [ -d index.html ]; then
-            echo "ERROR: index.html is still a directory!"
-            ls -la index.html
-            exit 1
+            echo "WARNING: index.html is a directory, removing..."
+            rm -rf index.html
           fi
-          
+          # 如果不存在或不是文件，从 Git 重新检出
           if [ ! -f index.html ]; then
-            echo "ERROR: index.html is still not a regular file!"
-            ls -la index.html 2>&1 || echo "File does not exist"
+            echo "WARNING: index.html missing or not a file, checking out from Git..."
+            git checkout HEAD -- index.html
+          fi
+          # 验证是文件
+          if [ ! -f index.html ]; then
+            echo "ERROR: Failed to ensure index.html is a file"
             exit 1
           fi
-          
-          echo "✓ index.html is a valid file:"
-          ls -lh index.html
-          file index.html
-          echo "First 3 lines:"
-          head -3 index.html
+          echo "✓ Verified: index.html is a regular file"
       
       - name: Install dependencies
         working-directory: ./frontend
