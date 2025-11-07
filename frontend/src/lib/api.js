@@ -1,6 +1,6 @@
 // API 配置和工具函数
 
-import { getAllStaticProducts, formatStaticProductForAPI } from '../data/products';
+import { getAllStaticProducts, formatStaticProductForAPI } from '../../data/products';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fashion-store-api.reluct007.workers.dev';
 
