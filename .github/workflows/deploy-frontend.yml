@@ -65,31 +65,55 @@ jobs:
       - name: Build
         working-directory: ./frontend
         run: |
-          # 构建前最后一次修复 index.html
-          echo "=== Final check before build ==="
-          if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "WARNING: index.html is a directory or missing, fixing..."
-            rm -rf index.html
-            git show HEAD:frontend/index.html > index.html
-            chmod 644 index.html
+          # 构建前强制修复 index.html（无论当前状态如何）
+          echo "=== Force fixing index.html before build ==="
+          rm -rf index.html index.html.bak 2>&1 || true
+          
+          # 从 Git 重新创建文件
+          echo "Recreating index.html from Git..."
+          git show HEAD:frontend/index.html > index.html.tmp
+          
+          # 确保临时文件是文件
+          if [ -d index.html.tmp ]; then
+            echo "ERROR: Temporary file is a directory!"
+            exit 1
           fi
           
+          # 使用 cat 复制而不是直接重定向，避免文件系统问题
+          cat index.html.tmp > index.html
+          rm -f index.html.tmp
+          chmod 644 index.html
+          
+          # 同步文件系统（确保写入完成）
+          sync
+          
           # 验证
+          echo "Verifying index.html..."
           if [ ! -f index.html ]; then
-            echo "ERROR: index.html does not exist after fix!"
+            echo "ERROR: index.html does not exist!"
             exit 1
           fi
           if [ -d index.html ]; then
-            echo "ERROR: index.html is still a directory after fix!"
+            echo "ERROR: index.html is a directory!"
             ls -la index.html
             exit 1
           fi
           
-          echo "✓ index.html verified before build"
+          # 使用 stat 再次确认
+          STAT_OUTPUT=$(stat -c "%F" index.html 2>/dev/null || stat -f "%HT" index.html 2>/dev/null || echo "unknown")
+          echo "File type from stat: $STAT_OUTPUT"
+          
+          if echo "$STAT_OUTPUT" | grep -qi "directory"; then
+            echo "ERROR: stat shows index.html is a directory!"
+            exit 1
+          fi
+          
+          echo "✓ index.html verified (file type: $STAT_OUTPUT)"
           ls -lh index.html
           file index.html
           
-          # 执行构建
+          # 立即执行构建，不给任何机会让文件状态改变
+          echo "Starting build immediately..."
           npm run build
       
       - name: Deploy to Cloudflare Pages
