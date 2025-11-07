@@ -64,7 +64,33 @@ jobs:
       
       - name: Build
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          # 构建前最后一次修复 index.html
+          echo "=== Final check before build ==="
+          if [ -d index.html ] || [ ! -f index.html ]; then
+            echo "WARNING: index.html is a directory or missing, fixing..."
+            rm -rf index.html
+            git show HEAD:frontend/index.html > index.html
+            chmod 644 index.html
+          fi
+          
+          # 验证
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html does not exist after fix!"
+            exit 1
+          fi
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory after fix!"
+            ls -la index.html
+            exit 1
+          fi
+          
+          echo "✓ index.html verified before build"
+          ls -lh index.html
+          file index.html
+          
+          # 执行构建
+          npm run build
       
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
