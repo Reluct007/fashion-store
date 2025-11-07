@@ -31,12 +31,9 @@ fashion-store/
 │   │   ├── lib/          # API 工具库
 │   │   ├── images/       # 图片资源
 │   │   └── ...
-│   ├── data/             # 静态产品数据（与 PANDING 项目一致）
-│   │   └── products.js   # 产品数据文件
 │   ├── templates/        # 网站模板（fashion、modern、minimal）
 │   ├── config/           # 模板配置
 │   ├── public/           # 静态资源
-│   │   └── product/      # 产品图片目录
 │   └── package.json      # 前端依赖
 ├── backend/              # 后端 API 服务
 │   ├── src/
@@ -115,32 +112,10 @@ npm run build
 
 ### 1. 产品管理
 
-项目支持两种产品管理方式：
-
-#### 静态产品数据（文件管理）
-
-- **文件位置**: `frontend/data/products.js`（与 PANDING 项目结构一致）
-- **图片目录**: `frontend/public/product/`
-- **支持格式**:
-  - **标准格式**: 包含完整的 SEO 字段和产品信息
-  - **PANDING格式**: 兼容 PANDING 项目的产品数据格式（自动转换）
-- **特点**: 
-  - 静态产品优先显示
-  - 支持批量导入
-  - 适合大量产品管理
-
-#### 数据库产品数据（管理面板）
-
-- 通过管理面板进行 CRUD 操作
-- 支持在线编辑和批量上传
-- 适合频繁更新的产品
-
-#### 产品展示功能
-
 - 产品列表展示
 - 产品详情页（带促销标签、倒计时、相关产品）
 - 产品分类筛选
-- 静态产品和数据库产品自动合并显示
+- 管理面板产品 CRUD 操作
 
 ### 2. 用户认证
 
@@ -284,93 +259,6 @@ binding = "DB"
 database_name = "fashion-store-db"
 database_id = "YOUR_DATABASE_ID"
 ```
-
-## 产品数据管理
-
-### 静态产品数据格式
-
-#### 标准格式示例
-
-```javascript
-{
-  id: 1,
-  name: "Elegant Summer Dress",
-  slug: "elegant-summer-dress",
-  title: "Elegant Summer Dress - Premium Fashion",
-  description: "Beautiful summer dress...",
-  price: 89.99,
-  originalPrice: 129.99,
-  category: "Dresses",
-  image: "/product/dress-1.jpg",
-  images: ["/product/dress-1-1.jpg", "/product/dress-1-2.jpg"],
-  rating: 4.5,
-  reviews: 128,
-  onSale: true,
-  stock: 50,
-  sku: "DRS-001",
-  brand: "Fashion Brand",
-  status: "active",
-  features: ["Premium Quality Material", "Comfortable Fit"]
-}
-```
-
-#### PANDING格式示例（自动转换）
-
-```javascript
-{
-  title: "Protective Case 6.7'' Labubu Doll",
-  category: "Labubu",
-  description: "Elevate your retail offerings...",
-  image: "/product/61Q9iVNA6fL.jpg",
-  images: ["/product/image1.png", "/product/image2.jpg"],
-  image_names: ["61Q9iVNA6fL.jpg", "image1.png"],
-  features: [
-    {
-      title: "Premium PVC Material",
-      description: "High-quality PVC material..."
-    }
-  ]
-}
-```
-
-### 添加产品
-
-1. 打开 `frontend/data/products.js`
-2. 在 `products` 数组中添加新产品对象
-3. 将产品图片上传到 `frontend/public/product/` 目录
-4. 确保图片路径使用 `/product/` 格式
-
-### 字段说明
-
-**必需字段**:
-- `id`: 产品唯一标识（标准格式）
-- `name`: 产品名称（标准格式）
-- `title`: 产品标题（PANDING格式，会作为name使用）
-- `price`: 价格（标准格式必需，PANDING格式默认为0）
-
-**可选字段**:
-- `slug`: URL友好标识（自动生成）
-- `description`: 产品描述
-- `metaDescription`, `metaKeywords`, `canonicalUrl`: SEO字段
-- `category`: 产品分类
-- `image`: 主图片路径（使用 `/product/` 格式）
-- `images`: 额外图片数组
-- `rating`, `reviews`: 评分和评论数
-- `onSale`, `stock`, `sku`, `brand`: 其他产品信息
-- `status`: 状态（active/inactive/draft，默认active）
-- `features`: 特点数组（字符串数组或对象数组）
-
-### 图片路径
-
-- 所有图片统一存放在 `frontend/public/product/` 目录
-- 图片路径统一使用 `/product/` 格式
-- 与 PANDING 项目保持一致
-
-### 产品优先级
-
-- 静态产品数据优先显示
-- 如果静态产品和数据库产品有相同的 ID 或 slug，静态产品会优先
-- 两种方式的产品会合并显示在产品列表中
 
 ## 部署
 
