@@ -1,31 +1,102 @@
 // API 配置和工具函数
 
+import { getAllStaticProducts, formatStaticProductForAPI } from '../data/products';
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://fashion-store-api.reluct007.workers.dev';
 
 /**
+ * 合并静态产品和API产品
+ * 静态产品优先，如果ID或slug相同，使用静态产品
+ */
+function mergeProducts(staticProducts, apiProducts) {
+  const merged = [...staticProducts];
+  const staticIds = new Set(staticProducts.map(p => String(p.id)));
+  const staticSlugs = new Set(staticProducts.map(p => p.slug).filter(Boolean));
+  
+  // 添加API产品（排除已存在的）
+  apiProducts.forEach(apiProduct => {
+    const apiId = String(apiProduct.id);
+    const apiSlug = apiProduct.slug;
+    
+    if (!staticIds.has(apiId) && (!apiSlug || !staticSlugs.has(apiSlug))) {
+      merged.push(apiProduct);
+    }
+  });
+  
+  return merged;
+}
+
+/**
  * 获取所有产品
+ * 优先使用静态产品，然后合并API产品
  */
 export async function getProducts(category = null) {
-  const url = category 
-    ? `${API_URL}/api/products?category=${category}`
-    : `${API_URL}/api/products`;
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Failed to fetch products');
+  try {
+    // 获取静态产品
+    const staticProducts = getAllStaticProducts()
+      .map(formatStaticProductForAPI)
+      .filter(p => p.status === 'active' || p.status === undefined);
+    
+    // 尝试从API获取产品
+    let apiProducts = [];
+    try {
+      const url = category 
+        ? `${API_URL}/api/products?category=${category}`
+        : `${API_URL}/api/products`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        apiProducts = await response.json();
+      }
+    } catch (error) {
+      console.warn('Failed to fetch products from API, using static products only:', error);
+    }
+    
+    // 合并产品
+    let mergedProducts = mergeProducts(staticProducts, apiProducts);
+    
+    // 如果指定了分类，进行过滤
+    if (category) {
+      mergedProducts = mergedProducts.filter(p => p.category === category);
+    }
+    
+    return mergedProducts;
+  } catch (error) {
+    console.error('Error getting products:', error);
+    // 如果出错，至少返回静态产品
+    const staticProducts = getAllStaticProducts()
+      .map(formatStaticProductForAPI)
+      .filter(p => (!category || p.category === category) && (p.status === 'active' || p.status === undefined));
+    return staticProducts;
   }
-  return response.json();
 }
 
 /**
  * 获取单个产品
+ * 优先从静态产品中查找，如果没有则从API获取
  */
 export async function getProduct(id) {
-  const response = await fetch(`${API_URL}/api/products/${id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch product');
+  // 先尝试从静态产品中查找
+  const staticProducts = getAllStaticProducts();
+  const staticProduct = staticProducts.find(p => 
+    p.id === id || p.id === String(id) || p.slug === id
+  );
+  
+  if (staticProduct) {
+    return formatStaticProductForAPI(staticProduct);
   }
-  return response.json();
+  
+  // 如果静态产品中没有，从API获取
+  try {
+    const response = await fetch(`${API_URL}/api/products/${id}`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.warn('Failed to fetch product from API:', error);
+  }
+  
+  throw new Error('Product not found');
 }
 
 /**
@@ -34,13 +105,28 @@ export async function getProduct(id) {
 export async function createProduct(product) {
   const response = await fetch(`${API_URL}/api/products`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(product),
   });
   if (!response.ok) {
-    throw new Error('Failed to create product');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create product');
+  }
+  return response.json();
+}
+
+/**
+ * 批量上传产品
+ */
+export async function bulkUploadProducts(products) {
+  const response = await fetch(`${API_URL}/api/products/bulk-upload`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ products }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to bulk upload products');
   }
   return response.json();
 }
@@ -51,13 +137,12 @@ export async function createProduct(product) {
 export async function updateProduct(id, product) {
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(product),
   });
   if (!response.ok) {
-    throw new Error('Failed to update product');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to update product');
   }
   return response.json();
 }
@@ -68,9 +153,11 @@ export async function updateProduct(id, product) {
 export async function deleteProduct(id) {
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    throw new Error('Failed to delete product');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to delete product');
   }
   return response.json();
 }

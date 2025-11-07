@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, TrendingUp, 
-  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3
+  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Upload
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
 import ClickStatsManager from '../components/ClickStatsManager';
+import BulkUploadManager from '../components/BulkUploadManager';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -23,12 +24,24 @@ export default function Admin() {
   };
   const [formData, setFormData] = useState({
     name: '',
+    slug: '',
+    title: '',
     price: '',
     originalPrice: '',
     category: '',
     description: '',
+    metaDescription: '',
+    metaKeywords: '',
+    canonicalUrl: '',
     image: '',
-    onSale: false
+    images: '',
+    sku: '',
+    brand: '',
+    stock: '',
+    rating: '',
+    reviews: '',
+    onSale: false,
+    status: 'active'
   });
 
   // 从 API 加载产品数据
@@ -53,23 +66,46 @@ export default function Admin() {
   const handleEdit = (product) => {
     setEditingProduct(product.id);
     setFormData({
-      name: product.name,
-      price: product.price.toString(),
+      name: product.name || '',
+      slug: product.slug || '',
+      title: product.title || '',
+      price: product.price?.toString() || '',
       originalPrice: product.originalPrice?.toString() || '',
-      category: product.category,
-      description: product.description,
-      image: product.image,
-      onSale: product.onSale || false
+      category: product.category || '',
+      description: product.description || '',
+      metaDescription: product.metaDescription || '',
+      metaKeywords: product.metaKeywords || '',
+      canonicalUrl: product.canonicalUrl || '',
+      image: product.image || '',
+      images: Array.isArray(product.images) ? product.images.join(', ') : (product.images || ''),
+      sku: product.sku || '',
+      brand: product.brand || '',
+      stock: product.stock?.toString() || '',
+      rating: product.rating?.toString() || '',
+      reviews: product.reviews?.toString() || '',
+      onSale: product.onSale || false,
+      status: product.status || 'active'
     });
   };
 
   const handleSave = async () => {
     try {
       setError(null);
+      
+      // 处理images数组
+      let images = [];
+      if (formData.images) {
+        images = formData.images.split(',').map(img => img.trim()).filter(img => img);
+      }
+      
       const productData = {
         ...formData,
-        price: parseFloat(formData.price),
+        price: parseFloat(formData.price) || 0,
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+        stock: formData.stock ? parseInt(formData.stock) : 0,
+        rating: formData.rating ? parseFloat(formData.rating) : 0,
+        reviews: formData.reviews ? parseInt(formData.reviews) : 0,
+        images: images.length > 0 ? images : undefined
       };
       
       if (editingProduct) {
@@ -85,12 +121,24 @@ export default function Admin() {
       setEditingProduct(null);
       setFormData({
         name: '',
+        slug: '',
+        title: '',
         price: '',
         originalPrice: '',
         category: '',
         description: '',
+        metaDescription: '',
+        metaKeywords: '',
+        canonicalUrl: '',
         image: '',
-        onSale: false
+        images: '',
+        sku: '',
+        brand: '',
+        stock: '',
+        rating: '',
+        reviews: '',
+        onSale: false,
+        status: 'active'
       });
     } catch (err) {
       setError('Failed to save product: ' + err.message);
@@ -171,6 +219,17 @@ export default function Admin() {
             Products
           </button>
           <button
+            onClick={() => setActiveTab('bulk-upload')}
+            className={`px-6 py-3 font-semibold transition-colors ${
+              activeTab === 'bulk-upload'
+                ? 'text-rose-600 border-b-2 border-rose-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Upload className="w-5 h-5 inline mr-2" />
+            Bulk Upload
+          </button>
+          <button
             onClick={() => setActiveTab('configs')}
             className={`px-6 py-3 font-semibold transition-colors ${
               activeTab === 'configs'
@@ -236,12 +295,24 @@ export default function Admin() {
                   setEditingProduct(null);
                   setFormData({
                     name: '',
+                    slug: '',
+                    title: '',
                     price: '',
                     originalPrice: '',
                     category: '',
                     description: '',
+                    metaDescription: '',
+                    metaKeywords: '',
+                    canonicalUrl: '',
                     image: '',
-                    onSale: false
+                    images: '',
+                    sku: '',
+                    brand: '',
+                    stock: '',
+                    rating: '',
+                    reviews: '',
+                    onSale: false,
+                    status: 'active'
                   });
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
@@ -300,6 +371,25 @@ export default function Admin() {
                       <option value="Accessories">Accessories</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Slug (URL-friendly)</label>
+                    <input
+                      type="text"
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      placeholder="auto-generated if empty"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">SEO Title</label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea
@@ -310,13 +400,112 @@ export default function Admin() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Description (SEO)</label>
+                    <textarea
+                      value={formData.metaDescription}
+                      onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                      rows="2"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Meta Keywords (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={formData.metaKeywords}
+                      onChange={(e) => setFormData({ ...formData, metaKeywords: e.target.value })}
+                      placeholder="keyword1, keyword2, keyword3"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Canonical URL</label>
+                    <input
+                      type="url"
+                      value={formData.canonicalUrl}
+                      onChange={(e) => setFormData({ ...formData, canonicalUrl: e.target.value })}
+                      placeholder="https://example.com/product"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Main Image URL</label>
                     <input
                       type="url"
                       value={formData.image}
                       onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                     />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Images (comma-separated URLs)</label>
+                    <input
+                      type="text"
+                      value={formData.images}
+                      onChange={(e) => setFormData({ ...formData, images: e.target.value })}
+                      placeholder="https://img1.com, https://img2.com"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+                    <input
+                      type="text"
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Brand</label>
+                    <input
+                      type="text"
+                      value={formData.brand}
+                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                    <input
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      value={formData.rating}
+                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Reviews Count</label>
+                    <input
+                      type="number"
+                      value={formData.reviews}
+                      onChange={(e) => setFormData({ ...formData, reviews: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="draft">Draft</option>
+                    </select>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -341,12 +530,24 @@ export default function Admin() {
                       setEditingProduct(null);
                       setFormData({
                         name: '',
+                        slug: '',
+                        title: '',
                         price: '',
                         originalPrice: '',
                         category: '',
                         description: '',
+                        metaDescription: '',
+                        metaKeywords: '',
+                        canonicalUrl: '',
                         image: '',
-                        onSale: false
+                        images: '',
+                        sku: '',
+                        brand: '',
+                        stock: '',
+                        rating: '',
+                        reviews: '',
+                        onSale: false,
+                        status: 'active'
                       });
                     }}
                     className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
@@ -422,6 +623,11 @@ export default function Admin() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Bulk Upload Tab */}
+        {activeTab === 'bulk-upload' && (
+          <BulkUploadManager onUploadComplete={loadProducts} />
         )}
 
         {/* Link Configs Tab */}
