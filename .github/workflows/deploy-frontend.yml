@@ -63,53 +63,53 @@ jobs:
         working-directory: ./frontend
         run: npm install
       
-      - name: Force fix index.html step 2 before build
+      - name: Build with index.html fix
         working-directory: ./frontend
         run: |
-          echo "=== Step 2: Fix index.html before build ==="
-          # 检查当前状态
-          CURRENT_TYPE=$(stat -f "%HT" index.html 2>/dev/null || stat -c "%F" index.html 2>/dev/null || echo "unknown")
-          echo "Current index.html type: $CURRENT_TYPE"
+          echo "=== Final fix and build ==="
+          # 强制删除任何 index.html（文件或目录）
+          rm -rf index.html index.html.tmp 2>&1 || true
           
-          # 再次检查，如果出问题就重新修复
-          if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "WARNING: index.html is not a file, re-fixing..."
-            rm -rf index.html 2>&1 || true
-            # 使用临时文件方式确保安全
-            git show HEAD:frontend/index.html > index.html.tmp
-            mv index.html.tmp index.html
-            chmod 644 index.html
+          # 直接从 Git 获取并创建文件
+          echo "Creating index.html from Git..."
+          git show HEAD:frontend/index.html > index.html.tmp
+          
+          # 验证临时文件
+          if [ ! -f index.html.tmp ] || [ -d index.html.tmp ]; then
+            echo "ERROR: Failed to create temporary file"
+            exit 1
           fi
           
-          # 最终验证
+          # 移动并设置权限
+          mv index.html.tmp index.html
+          chmod 644 index.html
+          
+          # 最终验证必须是文件
           if [ -d index.html ]; then
-            echo "ERROR: index.html is a directory before build!"
+            echo "ERROR: index.html is still a directory after fix!"
             ls -la index.html
             exit 1
           fi
+          
           if [ ! -f index.html ]; then
-            echo "ERROR: index.html does not exist before build!"
+            echo "ERROR: index.html does not exist after fix!"
             exit 1
           fi
           
-          # 验证文件内容
-          if ! head -1 index.html | grep -q "doctype"; then
-            echo "WARNING: index.html content may be invalid, re-creating..."
-            rm -f index.html
-            git show HEAD:frontend/index.html > index.html.tmp
-            mv index.html.tmp index.html
-            chmod 644 index.html
+          # 验证内容
+          if ! head -1 index.html | grep -qi "doctype"; then
+            echo "ERROR: index.html content is invalid!"
+            head -5 index.html
+            exit 1
           fi
           
-          echo "✓ Step 2: index.html verified as file"
+          echo "✓ index.html verified as valid file"
           ls -lh index.html
           file index.html
-          echo "First 3 lines:"
-          head -3 index.html
-      
-      - name: Build
-        working-directory: ./frontend
-        run: npm run build
+          
+          # 立即执行构建（不给任何机会让它变成目录）
+          echo "Starting build..."
+          npm run build
       
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
