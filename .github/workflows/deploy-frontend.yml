@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Force fix index.html (step 1: after checkout)
+      - name: Force fix index.html step 1 after checkout
         working-directory: ./frontend
         run: |
           echo "=== Step 1: Fix index.html after checkout ==="
@@ -63,7 +63,7 @@ jobs:
         working-directory: ./frontend
         run: npm install
       
-      - name: Force fix index.html (step 2: before build)
+      - name: Force fix index.html step 2 before build
         working-directory: ./frontend
         run: |
           echo "=== Step 2: Fix index.html before build ==="
