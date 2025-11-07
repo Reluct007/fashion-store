@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
-import { readFileSync, writeFileSync, existsSync, statSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { readFileSync, writeFileSync, existsSync, statSync, rmSync } from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // 确保 index.html 存在且是文件
 function ensureIndexHtml() {
@@ -12,8 +16,7 @@ function ensureIndexHtml() {
     const stats = statSync(indexPath)
     if (stats.isDirectory()) {
       console.log('WARNING: index.html is a directory, removing...')
-      const { execSync } = require('child_process')
-      execSync(`rm -rf "${indexPath}"`)
+      rmSync(indexPath, { recursive: true, force: true })
     }
   }
   
@@ -52,6 +55,7 @@ try {
   ensureIndexHtml()
 } catch (error) {
   console.error('Error ensuring index.html:', error)
+  throw error
 }
 
 // https://vite.dev/config/
