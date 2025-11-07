@@ -33,25 +33,7 @@ jobs:
           
           # 直接创建 index.html 文件（不依赖 Git）
           echo "Creating index.html file..."
-          cat > index.html << 'EOF'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="/" />
-    <title>Fashion Store - Discover Your Style</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-EOF
+          printf '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <link rel="icon" type="image/svg+xml" href="/vite.svg" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />\n    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />\n    <meta name="robots" content="index, follow" />\n    <link rel="canonical" href="/" />\n    <title>Fashion Store - Discover Your Style</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.jsx"></script>\n  </body>\n</html>\n' > index.html
           
           # 验证文件
           echo "Verifying index.html..."
@@ -85,12 +67,8 @@ EOF
         run: |
           echo "Verifying index.html before build..."
           
-          # 检查是否是目录
-          if [ -d index.html ]; then
-            echo "ERROR: index.html is a directory! Recreating..."
-            rm -rf index.html
-            cat > index.html << 'EOF'
-<!doctype html>
+          # HTML 内容
+          HTML_CONTENT='<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -106,32 +84,13 @@ EOF
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-</html>
-EOF
-          fi
+</html>'
           
-          # 检查文件是否存在
-          if [ ! -f index.html ]; then
-            echo "ERROR: index.html does not exist! Creating..."
-            cat > index.html << 'EOF'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="/" />
-    <title>Fashion Store - Discover Your Style</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-EOF
+          # 检查是否是目录或不存在
+          if [ -d index.html ] || [ ! -f index.html ]; then
+            echo "ERROR: index.html is a directory or missing! Recreating..."
+            rm -rf index.html
+            echo "$HTML_CONTENT" > index.html
           fi
           
           # 最终验证
