@@ -143,7 +143,7 @@ export default function Products({ data = {} }) {
               {/* Product Info */}
               <div className="p-6">
                 <p className="text-sm text-gray-500 mb-2">{product.category}</p>
-                  <Link to={`/product/${product.slug || product.id}`}>
+                  <Link to={`/product/${product.id}`}>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-rose-600 transition-colors">
                       {product.name}
                     </h3>
@@ -180,7 +180,7 @@ export default function Products({ data = {} }) {
 
                 {/* Add to Cart Button */}
                 <Link
-                  to={`/product/${product.slug || product.id}`}
+                  to={`/product/${product.id}`}
                   className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-lg hover:bg-rose-700 transition-colors font-semibold"
                 >
                   <ShoppingCart className="w-5 h-5" />

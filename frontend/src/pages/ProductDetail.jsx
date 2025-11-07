@@ -9,8 +9,6 @@ import CountdownTimer from '../components/common/CountdownTimer';
 import SocialShare from '../components/common/SocialShare';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
-import SEOHead from '../components/SEOHead';
-import StructuredData from '../components/StructuredData';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -35,9 +33,7 @@ export default function ProductDetail() {
     try {
       setLoading(true);
       setError(null);
-      // 支持数字ID和slug
-      const productId = isNaN(parseInt(id)) ? id : parseInt(id);
-      const productData = await getProduct(productId);
+      const productData = await getProduct(parseInt(id));
       setProduct(productData);
       
       // 加载相关产品
@@ -128,54 +124,8 @@ export default function ProductDetail() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const baseUrl = window.location.origin;
-  const productUrl = `${baseUrl}/product/${product.id}`;
-  const canonicalUrl = product.canonicalUrl || productUrl;
-  const seoTitle = product.title || `${product.name} - Fashion Store`;
-  const seoDescription = product.metaDescription || product.description || `Shop ${product.name} at Fashion Store. ${product.description || 'Premium quality product.'}`;
-  const seoKeywords = product.metaKeywords || `${product.name}, ${product.category}, fashion, online shopping`;
-  const seoImage = product.image || (Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : '');
-
-  // 结构化数据（Product schema）
-  const productStructuredData = product ? {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": product.name,
-    "description": product.description || seoDescription,
-    "image": seoImage ? [seoImage] : [],
-    "brand": product.brand ? {
-      "@type": "Brand",
-      "name": product.brand
-    } : undefined,
-    "offers": {
-      "@type": "Offer",
-      "url": productUrl,
-      "priceCurrency": "USD",
-      "price": product.price.toString(),
-      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "priceValidUntil": new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    },
-    "aggregateRating": product.rating > 0 ? {
-      "@type": "AggregateRating",
-      "ratingValue": product.rating.toString(),
-      "reviewCount": (product.reviews || 0).toString()
-    } : undefined,
-    "sku": product.sku || undefined
-  } : null;
-
   return (
     <div className="min-h-screen flex flex-col">
-      <SEOHead
-        title={seoTitle}
-        description={seoDescription}
-        keywords={seoKeywords}
-        canonical={canonicalUrl}
-        image={seoImage}
-        type="product"
-      />
-      {productStructuredData && (
-        <StructuredData type="Product" data={productStructuredData} />
-      )}
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
@@ -357,7 +307,7 @@ export default function ProductDetail() {
                 {relatedProducts.map((item) => (
                   <Link
                     key={item.id}
-                    to={`/product/${item.slug || item.id}`}
+                    to={`/product/${item.id}`}
                     className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
                   >
                     <div className="relative">
