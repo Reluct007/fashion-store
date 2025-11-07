@@ -7,7 +7,7 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch: # 也支持手动触发
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,52 +24,18 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Fix index.html after checkout
+      - name: Ensure index.html exists as file
         working-directory: ./frontend
         run: |
-          # 确保脚本目录存在
-          mkdir -p scripts
-          # 如果脚本不存在，创建它
-          if [ ! -f scripts/fix-index-html.sh ]; then
-            cat > scripts/fix-index-html.sh << 'SCRIPT_EOF'
-#!/bin/bash
-set -e
-cd "$(dirname "$0")/.."
-rm -rf index.html index.html.tmp 2>&1 || true
-git show HEAD:frontend/index.html > index.html.tmp 2>&1 || {
-  cat > index.html.tmp << 'HTML_EOF'
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Discover your style with our latest fashion collection. Shop trendy designs and premium quality clothing, accessories, and more." />
-    <meta name="keywords" content="fashion, clothing, style, trends, online shopping, fashion store" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="/" />
-    <title>Fashion Store - Discover Your Style</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
-HTML_EOF
-}
-cat index.html.tmp > index.html
-rm -f index.html.tmp
-chmod 644 index.html
-if [ ! -f index.html ] || [ -d index.html ]; then
-  echo "ERROR: Failed to create index.html as file"
-  exit 1
-fi
-echo "✓ index.html fixed"
-SCRIPT_EOF
-            chmod +x scripts/fix-index-html.sh
+          # 删除任何可能存在的 index.html（文件或目录）
+          rm -rf index.html 2>/dev/null || true
+          # 直接从 Git 获取内容并创建文件
+          git show HEAD:frontend/index.html > index.html
+          # 验证
+          if [ ! -f index.html ] || [ -d index.html ]; then
+            echo "Error: Failed to create index.html"
+            exit 1
           fi
-          # 执行修复
-          bash scripts/fix-index-html.sh
       
       - name: Install dependencies
         working-directory: ./frontend
@@ -77,7 +43,14 @@ SCRIPT_EOF
       
       - name: Build
         working-directory: ./frontend
-        run: npm run build
+        run: |
+          # 构建前再次确保 index.html 是文件
+          if [ -d index.html ] || [ ! -f index.html ]; then
+            echo "Fixing index.html before build..."
+            rm -rf index.html
+            git show HEAD:frontend/index.html > index.html
+          fi
+          npm run build
       
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -87,4 +60,3 @@ SCRIPT_EOF
           projectName: fashion-store
           directory: frontend/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
