@@ -2,30 +2,173 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fashion-store-api.reluct007.workers.dev';
 
+// 静态产品数据缓存
+let staticProductsCache = null;
+let staticProductsLoading = false;
+
 /**
- * 获取所有产品
+ * 加载静态产品数据（懒加载）
  */
-export async function getProducts(category = null) {
-  const url = category 
-    ? `${API_URL}/api/products?category=${category}`
-    : `${API_URL}/api/products`;
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error('Failed to fetch products');
+async function loadStaticProducts() {
+  if (staticProductsCache !== null) {
+    return staticProductsCache;
   }
-  return response.json();
+  
+  if (staticProductsLoading) {
+    // 如果正在加载，等待
+    while (staticProductsLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return staticProductsCache || [];
+  }
+  
+  staticProductsLoading = true;
+  try {
+    // 动态导入静态产品数据
+    const productModule = await import('../../data/product.js');
+    staticProductsCache = productModule.product || [];
+  } catch (error) {
+    console.warn('Failed to load static product data:', error);
+    staticProductsCache = [];
+  } finally {
+    staticProductsLoading = false;
+  }
+  
+  return staticProductsCache;
 }
 
 /**
- * 获取单个产品
+ * 将静态产品数据转换为 API 格式
+ */
+function normalizeProduct(product, index) {
+  // 从静态数据格式转换为前端使用的格式
+  return {
+    id: `static_${index}`, // 静态产品使用特殊 ID 前缀
+    name: product.title || product.name || 'Product',
+    title: product.title || product.name || 'Product',
+    description: product.description || '',
+    price: product.price || 0,
+    originalPrice: product.originalPrice || null,
+    image: product.image || '',
+    images: product.images || [],
+    category: product.category || 'Uncategorized',
+    rating: product.rating || 0,
+    reviews: product.reviews || 0,
+    onSale: product.onSale || false,
+    features: product.features || [],
+    // 保留原始静态数据
+    _isStatic: true,
+    _staticData: product
+  };
+}
+
+/**
+ * 合并静态产品和 API 产品数据（静态数据优先）
+ */
+function mergeProducts(staticProductsList, apiProducts) {
+  const merged = [];
+  const apiProductMap = new Map();
+  
+  // 将 API 产品转换为 Map（使用 title/name 作为键）
+  apiProducts.forEach(product => {
+    const key = (product.title || product.name || '').toLowerCase().trim();
+    if (key) {
+      apiProductMap.set(key, product);
+    }
+  });
+  
+  // 先添加静态产品（优先级更高）
+  staticProductsList.forEach((product, index) => {
+    const normalized = normalizeProduct(product, index);
+    merged.push(normalized);
+    
+    // 如果 API 中有同名产品，移除它（静态数据优先）
+    const key = (product.title || product.name || '').toLowerCase().trim();
+    if (key) {
+      apiProductMap.delete(key);
+    }
+  });
+  
+  // 添加剩余的 API 产品
+  apiProductMap.forEach(product => {
+    merged.push(product);
+  });
+  
+  return merged;
+}
+
+/**
+ * 获取所有产品（合并静态和 API 数据）
+ */
+export async function getProducts(category = null) {
+  // 加载静态产品数据
+  const staticProducts = await loadStaticProducts();
+  
+  let apiProducts = [];
+  
+  try {
+    const url = category 
+      ? `${API_URL}/api/products?category=${category}`
+      : `${API_URL}/api/products`;
+    
+    const response = await fetch(url);
+    if (response.ok) {
+      apiProducts = await response.json();
+    }
+  } catch (error) {
+    console.warn('Failed to fetch products from API:', error);
+  }
+  
+  // 合并静态产品和 API 产品
+  const mergedProducts = mergeProducts(staticProducts, apiProducts);
+  
+  // 如果指定了分类，进行筛选
+  if (category) {
+    return mergedProducts.filter(p => 
+      p.category && p.category.toLowerCase() === category.toLowerCase()
+    );
+  }
+  
+  return mergedProducts;
+}
+
+/**
+ * 获取单个产品（优先从静态数据查找，然后从 API）
  */
 export async function getProduct(id) {
-  const response = await fetch(`${API_URL}/api/products/${id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch product');
+  // 加载静态产品数据
+  const staticProducts = await loadStaticProducts();
+  
+  // 如果是静态产品 ID
+  if (typeof id === 'string' && id.startsWith('static_')) {
+    const index = parseInt(id.replace('static_', ''));
+    if (staticProducts[index]) {
+      return normalizeProduct(staticProducts[index], index);
+    }
   }
-  return response.json();
+  
+  // 尝试从静态产品中通过 title/name 匹配
+  const staticMatch = staticProducts.find((p, index) => {
+    const normalized = normalizeProduct(p, index);
+    return normalized.id === id || normalized.name === id || normalized.title === id;
+  });
+  
+  if (staticMatch) {
+    const index = staticProducts.indexOf(staticMatch);
+    return normalizeProduct(staticMatch, index);
+  }
+  
+  // 从 API 获取
+  try {
+    const response = await fetch(`${API_URL}/api/products/${id}`);
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.warn('Failed to fetch product from API:', error);
+  }
+  
+  throw new Error('Product not found');
 }
 
 /**
