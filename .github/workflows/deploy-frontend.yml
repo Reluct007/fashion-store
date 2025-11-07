@@ -7,7 +7,7 @@ on:
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-frontend.yml'
-  workflow_dispatch:
+  workflow_dispatch: # 也支持手动触发
 
 jobs:
   deploy:
@@ -24,48 +24,9 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Create index.html file
-        working-directory: ./frontend
-        run: |
-          # 强制删除任何 index.html（文件或目录）
-          rm -rf index.html 2>&1 || true
-          
-          # 使用脚本创建 index.html
-          bash ../../.github/scripts/create-index-html.sh
-          
-          # 验证
-          if [ ! -f index.html ] || [ -d index.html ]; then
-            echo "ERROR: Failed to create index.html"
-            exit 1
-          fi
-          
-          echo "✓ index.html verified"
-          ls -lh index.html
-          file index.html
-      
       - name: Install dependencies
         working-directory: ./frontend
         run: npm install
-      
-      - name: Verify and fix index.html before build
-        working-directory: ./frontend
-        run: |
-          # 如果 index.html 是目录或不存在，重新创建
-          if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "WARNING: index.html is a directory or missing, recreating..."
-            rm -rf index.html
-            bash ../../.github/scripts/create-index-html.sh
-          fi
-          
-          # 最终验证
-          if [ -d index.html ] || [ ! -f index.html ]; then
-            echo "ERROR: index.html is still invalid after fix!"
-            exit 1
-          fi
-          
-          echo "✓ index.html verified before build"
-          ls -lh index.html
-          file index.html
       
       - name: Build
         working-directory: ./frontend
