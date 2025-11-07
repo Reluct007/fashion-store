@@ -19,8 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # 确保文件系统权限正确
+          # 确保文件系统权限正确，禁用 LFS
           lfs: false
+          # 使用完整历史记录
+          fetch-depth: 0
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,21 +32,21 @@ jobs:
       - name: Fix index.html file type issue
         working-directory: ./frontend
         run: |
-          echo "Checking index.html status..."
-          ls -la index.html || echo "index.html not found"
+          echo "=== Checking index.html status after checkout ==="
+          ls -la index.html 2>&1 || echo "index.html not found after checkout"
           
-          # 如果 index.html 是目录，删除它
-          if [ -d index.html ]; then
-            echo "WARNING: index.html is a directory, removing it"
-            rm -rf index.html
-          fi
+          # 强制删除 index.html（无论是文件还是目录）
+          echo "Removing index.html if it exists (file or directory)..."
+          rm -rf index.html 2>&1 || true
           
-          # 如果 index.html 不存在或不是文件，从 Git 重新检出
+          # 从 Git 重新检出，确保是文件
+          echo "Checking out index.html from Git..."
+          git checkout HEAD -- index.html 2>&1
+          
+          # 如果仍然失败，手动创建
           if [ ! -f index.html ]; then
-            echo "WARNING: index.html is missing or not a file, checking out from Git"
-            git checkout HEAD -- index.html 2>&1 || {
-              echo "ERROR: Failed to checkout index.html, creating it manually"
-              cat > index.html << 'EOF'
+            echo "WARNING: Git checkout failed, creating index.html manually"
+            cat > index.html << 'EOF'
           <!doctype html>
           <html lang="en">
             <head>
@@ -63,18 +65,23 @@ jobs:
             </body>
           </html>
           EOF
-            }
           fi
           
           # 最终验证
-          if [ ! -f index.html ]; then
-            echo "ERROR: index.html is still not a regular file after all attempts"
+          echo "=== Final verification ==="
+          if [ -d index.html ]; then
+            echo "ERROR: index.html is still a directory!"
             ls -la index.html
-            file index.html 2>&1 || true
             exit 1
           fi
           
-          echo "✓ index.html verification:"
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html is still not a regular file!"
+            ls -la index.html 2>&1 || echo "File does not exist"
+            exit 1
+          fi
+          
+          echo "✓ index.html is a valid file:"
           ls -lh index.html
           file index.html
           echo "First 3 lines:"
