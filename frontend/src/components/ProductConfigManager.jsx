@@ -308,9 +308,8 @@ export default function ProductConfigManager() {
                   is_enabled: true,
                 });
               }}
-              className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap"
+              className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors whitespace-nowrap"
             >
-              <X className="w-5 h-5" />
               Cancel
             </button>
           </div>
