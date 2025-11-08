@@ -3,7 +3,7 @@
  * Cloudflare Workers 后端服务
  */
 
-import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail } from './db.js';
+import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from './db.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
 let products = [
@@ -531,6 +531,136 @@ async function getClickStatsDetailHandler(request, env) {
   });
 }
 
+// 订阅邮箱
+async function subscribeEmailHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  try {
+    const { email, source } = await request.json();
+    
+    if (!email || !email.includes('@')) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const result = await subscribeEmail(env, email, source || 'website');
+    
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error subscribing email:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to subscribe' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 取消订阅邮箱
+async function unsubscribeEmailHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  try {
+    const { email } = await request.json();
+    
+    if (!email) {
+      return new Response(JSON.stringify({ error: 'Email is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const success = await unsubscribeEmail(env, email);
+    
+    return new Response(JSON.stringify({ success }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error unsubscribing email:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to unsubscribe' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 获取所有邮箱订阅（需要认证）
+async function getEmailSubscriptionsHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const filters = {
+    status: url.searchParams.get('status') || undefined,
+    source: url.searchParams.get('source') || undefined,
+    limit: url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : undefined
+  };
+  
+  const subscriptions = await getAllEmailSubscriptions(env, filters);
+  
+  return new Response(JSON.stringify(subscriptions), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 删除邮箱订阅（需要认证）
+async function deleteEmailSubscriptionHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const id = parseInt(url.pathname.split('/').pop());
+  
+  if (!id) {
+    return new Response(JSON.stringify({ error: 'Invalid subscription ID' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const success = await deleteEmailSubscription(env, id);
+  
+  return new Response(JSON.stringify({ success }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+// 获取订阅统计（需要认证）
+async function getEmailSubscriptionStatsHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const stats = await getEmailSubscriptionStats(env);
+  
+  return new Response(JSON.stringify(stats), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // 主处理函数
 export default {
   async fetch(request, env, ctx) {
@@ -578,6 +708,24 @@ export default {
         } else if (path === '/api/click-stats/detail' && request.method === 'GET') {
           return getClickStatsDetailHandler(request, env);
         }
+      }
+      
+      // 邮箱订阅 API
+      if (path.startsWith('/api/email-subscriptions')) {
+        if (path === '/api/email-subscriptions' && request.method === 'POST') {
+          return subscribeEmailHandler(request, env);
+        } else if (path === '/api/email-subscriptions' && request.method === 'GET') {
+          return getEmailSubscriptionsHandler(request, env);
+        } else if (path === '/api/email-subscriptions/stats' && request.method === 'GET') {
+          return getEmailSubscriptionStatsHandler(request, env);
+        } else if (path.startsWith('/api/email-subscriptions/') && request.method === 'DELETE') {
+          return deleteEmailSubscriptionHandler(request, env);
+        }
+      }
+      
+      // 取消订阅 API（公开端点）
+      if (path === '/api/email-subscriptions/unsubscribe' && request.method === 'POST') {
+        return unsubscribeEmailHandler(request, env);
       }
       
       // 产品 API

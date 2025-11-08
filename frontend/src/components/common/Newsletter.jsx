@@ -1,7 +1,7 @@
 import { Mail } from 'lucide-react';
 import SubscribeForm from './SubscribeForm';
 
-export default function Newsletter() {
+export default function Newsletter({ source = 'homepage' }) {
   return (
     <section className="py-16 bg-gradient-to-br from-rose-50 to-pink-50">
       <div className="container mx-auto px-4">
@@ -15,7 +15,7 @@ export default function Newsletter() {
           <p className="text-gray-600 mb-8 text-lg">
             Subscribe to our newsletter and get exclusive offers, new arrivals, and fashion tips delivered to your inbox.
           </p>
-          <SubscribeForm />
+          <SubscribeForm source={source} />
           <p className="text-sm text-gray-500 mt-4">
             We respect your privacy. Unsubscribe at any time.
           </p>

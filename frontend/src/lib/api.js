@@ -56,6 +56,10 @@ function normalizeProduct(product, index) {
     reviews: product.reviews || 0,
     onSale: product.onSale || false,
     features: product.features || [],
+    // 尺码、颜色和库存信息
+    sizes: product.sizes || [],
+    colors: product.colors || [],
+    stock: product.stock || {},
     // 保留原始静态数据
     _isStatic: true,
     _staticData: product
@@ -419,6 +423,90 @@ export async function getClickStatsDetail(filters = {}) {
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.error || 'Failed to fetch click stats detail');
+  }
+  return response.json();
+}
+
+/**
+ * 订阅邮箱
+ */
+export async function subscribeEmail(email, source = 'website') {
+  const response = await fetch(`${API_URL}/api/email-subscriptions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, source }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to subscribe');
+  }
+  return response.json();
+}
+
+/**
+ * 取消订阅邮箱
+ */
+export async function unsubscribeEmail(email) {
+  const response = await fetch(`${API_URL}/api/email-subscriptions/unsubscribe`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to unsubscribe');
+  }
+  return response.json();
+}
+
+/**
+ * 获取所有邮箱订阅（需要认证）
+ */
+export async function getEmailSubscriptions(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.status) params.append('status', filters.status);
+  if (filters.source) params.append('source', filters.source);
+  if (filters.limit) params.append('limit', filters.limit);
+  
+  const response = await fetch(`${API_URL}/api/email-subscriptions?${params.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch email subscriptions');
+  }
+  return response.json();
+}
+
+/**
+ * 删除邮箱订阅（需要认证）
+ */
+export async function deleteEmailSubscription(id) {
+  const response = await fetch(`${API_URL}/api/email-subscriptions/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to delete email subscription');
+  }
+  return response.json();
+}
+
+/**
+ * 获取订阅统计（需要认证）
+ */
+export async function getEmailSubscriptionStats() {
+  const response = await fetch(`${API_URL}/api/email-subscriptions/stats`, {
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch email subscription stats');
   }
   return response.json();
 }

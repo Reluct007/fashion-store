@@ -44,7 +44,7 @@ export default function Home() {
       <main className="flex-grow">
         <Hero data={pageData.hero} />
         <Products data={pageData.products} />
-        <Newsletter />
+        <Newsletter source="homepage" />
       </main>
       <Footer />
     </div>

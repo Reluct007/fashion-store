@@ -124,7 +124,7 @@ export default function Footer({ data = {} }) {
               <p className="text-sm text-gray-400 mb-3">
                 Subscribe to get special offers and updates
               </p>
-              <SubscribeForm variant="footer" />
+              <SubscribeForm variant="footer" source="footer" />
             </div>
           </div>
         </div>

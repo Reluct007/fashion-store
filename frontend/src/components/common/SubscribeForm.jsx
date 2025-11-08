@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Mail, Check } from 'lucide-react';
+import { subscribeEmail } from '../../lib/api';
 
-export default function SubscribeForm({ variant = 'default' }) {
+export default function SubscribeForm({ variant = 'default', source = 'website' }) {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -19,11 +20,7 @@ export default function SubscribeForm({ variant = 'default' }) {
     setError('');
 
     try {
-      // TODO: 集成后端 API
-      // await subscribeEmail(email);
-      
-      // 模拟 API 调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await subscribeEmail(email, source);
       
       setIsSuccess(true);
       setEmail('');
@@ -33,7 +30,7 @@ export default function SubscribeForm({ variant = 'default' }) {
         setIsSuccess(false);
       }, 3000);
     } catch (err) {
-      setError('Failed to subscribe. Please try again.');
+      setError(err.message || 'Failed to subscribe. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -41,35 +38,40 @@ export default function SubscribeForm({ variant = 'default' }) {
 
   if (variant === 'footer') {
     return (
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
-          className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder-gray-400"
-          disabled={isSubmitting || isSuccess}
-        />
-        <button
-          type="submit"
-          disabled={isSubmitting || isSuccess}
-          className="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-        >
-          {isSuccess ? (
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4" />
-              Subscribed
-            </span>
-          ) : isSubmitting ? (
-            'Submitting...'
-          ) : (
-            'Subscribe'
-          )}
-        </button>
+      <div className="w-full">
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 placeholder-gray-400"
+            disabled={isSubmitting || isSuccess}
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting || isSuccess}
+            className="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isSuccess ? (
+              <span className="flex items-center gap-2">
+                <Check className="w-4 h-4" />
+                Subscribed
+              </span>
+            ) : isSubmitting ? (
+              'Submitting...'
+            ) : (
+              'Subscribe'
+            )}
+          </button>
+        </form>
         {error && (
-          <p className="text-sm text-red-400 mt-1">{error}</p>
+          <p className="text-sm text-red-400 mt-2">{error}</p>
         )}
-      </form>
+        {isSuccess && !error && (
+          <p className="text-sm text-green-400 mt-2">Thank you for subscribing!</p>
+        )}
+      </div>
     );
   }
 

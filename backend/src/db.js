@@ -44,6 +44,17 @@ export async function initDatabase(env) {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS email_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        status TEXT DEFAULT 'active',
+        source TEXT,
+        subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        unsubscribed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // 检查是否有管理员用户
@@ -455,6 +466,142 @@ export async function getClickStatsDetail(env, filters = {}) {
   } catch (error) {
     console.error('Error getting click stats detail:', error);
     return [];
+  }
+}
+
+/**
+ * 订阅邮箱
+ */
+export async function subscribeEmail(env, email, source = null) {
+  if (!env.DB) return null;
+  
+  try {
+    // 确保表存在
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS email_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        status TEXT DEFAULT 'active',
+        source TEXT,
+        subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        unsubscribed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    
+    // 检查邮箱是否已存在
+    const existing = await env.DB.prepare('SELECT * FROM email_subscriptions WHERE email = ?').bind(email).first();
+    
+    if (existing) {
+      // 如果已存在且是取消订阅状态，重新激活
+      if (existing.status === 'unsubscribed') {
+        await env.DB.prepare(
+          'UPDATE email_subscriptions SET status = ?, subscribed_at = CURRENT_TIMESTAMP, unsubscribed_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE email = ?'
+        ).bind('active', email).run();
+        return { id: existing.id, email, status: 'active', message: 'Resubscribed successfully' };
+      }
+      return { id: existing.id, email, status: existing.status, message: 'Already subscribed' };
+    }
+    
+    // 插入新订阅
+    const result = await env.DB.prepare(
+      'INSERT INTO email_subscriptions (email, status, source) VALUES (?, ?, ?)'
+    ).bind(email, 'active', source).run();
+    
+    return { id: result.meta.last_row_id, email, status: 'active', message: 'Subscribed successfully' };
+  } catch (error) {
+    console.error('Error subscribing email:', error);
+    throw error;
+  }
+}
+
+/**
+ * 取消订阅邮箱
+ */
+export async function unsubscribeEmail(env, email) {
+  if (!env.DB) return false;
+  
+  try {
+    await env.DB.prepare(
+      'UPDATE email_subscriptions SET status = ?, unsubscribed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE email = ?'
+    ).bind('unsubscribed', email).run();
+    return true;
+  } catch (error) {
+    console.error('Error unsubscribing email:', error);
+    return false;
+  }
+}
+
+/**
+ * 获取所有邮箱订阅
+ */
+export async function getAllEmailSubscriptions(env, filters = {}) {
+  if (!env.DB) return [];
+  
+  try {
+    let query = 'SELECT * FROM email_subscriptions WHERE 1=1';
+    const params = [];
+    
+    if (filters.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters.source) {
+      query += ' AND source = ?';
+      params.push(filters.source);
+    }
+    
+    query += ' ORDER BY subscribed_at DESC';
+    
+    if (filters.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const { results } = await env.DB.prepare(query).bind(...params).all();
+    return results || [];
+  } catch (error) {
+    console.error('Error getting email subscriptions:', error);
+    return [];
+  }
+}
+
+/**
+ * 删除邮箱订阅
+ */
+export async function deleteEmailSubscription(env, id) {
+  if (!env.DB) return false;
+  
+  try {
+    await env.DB.prepare('DELETE FROM email_subscriptions WHERE id = ?').bind(id).run();
+    return true;
+  } catch (error) {
+    console.error('Error deleting email subscription:', error);
+    return false;
+  }
+}
+
+/**
+ * 获取订阅统计
+ */
+export async function getEmailSubscriptionStats(env) {
+  if (!env.DB) return { total: 0, active: 0, unsubscribed: 0 };
+  
+  try {
+    const total = await env.DB.prepare('SELECT COUNT(*) as count FROM email_subscriptions').first();
+    const active = await env.DB.prepare("SELECT COUNT(*) as count FROM email_subscriptions WHERE status = 'active'").first();
+    const unsubscribed = await env.DB.prepare("SELECT COUNT(*) as count FROM email_subscriptions WHERE status = 'unsubscribed'").first();
+    
+    return {
+      total: total?.count || 0,
+      active: active?.count || 0,
+      unsubscribed: unsubscribed?.count || 0
+    };
+  } catch (error) {
+    console.error('Error getting email subscription stats:', error);
+    return { total: 0, active: 0, unsubscribed: 0 };
   }
 }
 

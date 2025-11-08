@@ -14,6 +14,23 @@ export const product = [
     rating: 4.5,
     reviews: 128,
     onSale: true,
+    // 尺码选项
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
+    // 颜色选项（支持名称和颜色代码）
+    colors: [
+      { name: "黑色", code: "#000000", image: "/product/example1-black.jpg" },
+      { name: "白色", code: "#FFFFFF", image: "/product/example1-white.jpg" },
+      { name: "红色", code: "#FF0000", image: "/product/example1-red.jpg" }
+    ],
+    // 库存信息（可选）
+    stock: {
+      "XS": { "黑色": 10, "白色": 5, "红色": 8 },
+      "S": { "黑色": 15, "白色": 12, "红色": 10 },
+      "M": { "黑色": 20, "白色": 18, "红色": 15 },
+      "L": { "黑色": 18, "白色": 15, "红色": 12 },
+      "XL": { "黑色": 12, "白色": 10, "红色": 8 },
+      "XXL": { "黑色": 5, "白色": 3, "红色": 5 }
+    },
     features: [
       {
         title: "高质量材料",
@@ -36,6 +53,16 @@ export const product = [
     rating: 4.8,
     reviews: 256,
     onSale: false,
+    // 尺码选项（对于配饰可能不需要，或使用通用尺寸）
+    sizes: ["One Size"],
+    // 颜色选项
+    colors: [
+      { name: "金色", code: "#FFD700", image: "/product/example2-gold.jpg" },
+      { name: "银色", code: "#C0C0C0", image: "/product/example2-silver.jpg" }
+    ],
+    stock: {
+      "One Size": { "金色": 25, "银色": 30 }
+    },
     features: [
       {
         title: "精美工艺",

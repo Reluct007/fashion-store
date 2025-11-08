@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, TrendingUp, 
-  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3
+  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail
 } from 'lucide-react';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../lib/api';
+import { getProducts, createProduct, updateProduct, deleteProduct, getEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
 import ClickStatsManager from '../components/ClickStatsManager';
 
@@ -15,6 +15,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [emailSubscriptions, setEmailSubscriptions] = useState([]);
+  const [emailStats, setEmailStats] = useState({ total: 0, active: 0, unsubscribed: 0 });
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
   
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
@@ -35,6 +38,14 @@ export default function Admin() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  // 加载邮箱订阅数据
+  useEffect(() => {
+    if (activeTab === 'subscriptions') {
+      loadEmailSubscriptions();
+      loadEmailStats();
+    }
+  }, [activeTab]);
 
   const loadProducts = async () => {
     try {
@@ -111,9 +122,47 @@ export default function Admin() {
     }
   };
 
+  const loadEmailSubscriptions = async () => {
+    try {
+      setLoadingSubscriptions(true);
+      setError(null);
+      const data = await getEmailSubscriptions({ limit: 1000 });
+      setEmailSubscriptions(data);
+    } catch (err) {
+      setError('Failed to load email subscriptions: ' + err.message);
+      console.error('Error loading email subscriptions:', err);
+    } finally {
+      setLoadingSubscriptions(false);
+    }
+  };
+
+  const loadEmailStats = async () => {
+    try {
+      const stats = await getEmailSubscriptionStats();
+      setEmailStats(stats);
+    } catch (err) {
+      console.error('Error loading email stats:', err);
+    }
+  };
+
+  const handleDeleteSubscription = async (id) => {
+    if (window.confirm('Are you sure you want to delete this subscription?')) {
+      try {
+        setError(null);
+        await deleteEmailSubscription(id);
+        await loadEmailSubscriptions();
+        await loadEmailStats();
+      } catch (err) {
+        setError('Failed to delete subscription: ' + err.message);
+        console.error('Error deleting subscription:', err);
+      }
+    }
+  };
+
   const stats = {
     totalProducts: products.length,
-    activeUsers: 3420
+    activeUsers: 3420,
+    emailSubscriptions: emailStats.active
   };
 
   return (
@@ -192,6 +241,17 @@ export default function Admin() {
             <BarChart3 className="w-5 h-5 inline mr-2" />
             Link Stats
           </button>
+          <button
+            onClick={() => setActiveTab('subscriptions')}
+            className={`px-6 py-3 font-semibold transition-colors ${
+              activeTab === 'subscriptions'
+                ? 'text-rose-600 border-b-2 border-rose-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Mail className="w-5 h-5 inline mr-2" />
+            Email Subscriptions
+          </button>
         </div>
 
         {/* Dashboard Tab */}
@@ -215,6 +275,16 @@ export default function Admin() {
                     <p className="text-3xl font-bold text-gray-900">{stats.activeUsers}</p>
                   </div>
                   <Users className="w-12 h-12 text-rose-600" />
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm mb-1">Email Subscriptions</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.emailSubscriptions}</p>
+                  </div>
+                  <Mail className="w-12 h-12 text-rose-600" />
                 </div>
               </div>
             </div>
@@ -432,6 +502,97 @@ export default function Admin() {
         {/* Link Stats Tab */}
         {activeTab === 'stats' && (
           <ClickStatsManager />
+        )}
+
+        {/* Email Subscriptions Tab */}
+        {activeTab === 'subscriptions' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Email Subscriptions Management</h2>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm mb-1">Total Subscriptions</p>
+                    <p className="text-3xl font-bold text-gray-900">{emailStats.total}</p>
+                  </div>
+                  <Mail className="w-12 h-12 text-rose-600" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm mb-1">Active</p>
+                    <p className="text-3xl font-bold text-green-600">{emailStats.active}</p>
+                  </div>
+                  <Check className="w-12 h-12 text-green-600" />
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-600 text-sm mb-1">Unsubscribed</p>
+                    <p className="text-3xl font-bold text-gray-600">{emailStats.unsubscribed}</p>
+                  </div>
+                  <X className="w-12 h-12 text-gray-600" />
+                </div>
+              </div>
+            </div>
+
+            {/* Subscriptions List */}
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {loadingSubscriptions ? (
+                <div className="p-8 text-center text-gray-600">Loading subscriptions...</div>
+              ) : emailSubscriptions.length === 0 ? (
+                <div className="p-8 text-center text-gray-600">No email subscriptions found.</div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed At</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {emailSubscriptions.map((subscription) => (
+                      <tr key={subscription.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{subscription.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {subscription.status === 'active' ? (
+                            <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">Active</span>
+                          ) : (
+                            <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Unsubscribed</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {subscription.source || 'website'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {subscription.subscribed_at ? new Date(subscription.subscribed_at).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleDeleteSubscription(subscription.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

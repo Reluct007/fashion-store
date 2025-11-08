@@ -21,6 +21,9 @@ export default function ProductDetail() {
   const [error, setError] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [buttonConfig, setButtonConfig] = useState(null);
+  // 尺码和颜色选择
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
 
   // 促销结束时间（示例：24小时后）
   const saleEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -33,8 +36,23 @@ export default function ProductDetail() {
     try {
       setLoading(true);
       setError(null);
-      const productData = await getProduct(parseInt(id));
+      const productData = await getProduct(id);
       setProduct(productData);
+      
+      // 初始化默认选择的尺码和颜色
+      if (productData.sizes && productData.sizes.length > 0) {
+        setSelectedSize(productData.sizes[0]);
+      }
+      if (productData.colors && productData.colors.length > 0) {
+        setSelectedColor(productData.colors[0].name);
+        // 如果第一个颜色有图片，更新主图片
+        if (productData.colors[0].image) {
+          const imageIndex = productData.images?.findIndex(img => img === productData.colors[0].image);
+          if (imageIndex >= 0) {
+            setSelectedImage(imageIndex);
+          }
+        }
+      }
       
       // 加载相关产品
       const allProducts = await getProducts();
@@ -56,6 +74,25 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = async () => {
+    // 验证尺码和颜色选择
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      alert('Please select a size');
+      return;
+    }
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      alert('Please select a color');
+      return;
+    }
+
+    // 检查库存
+    if (selectedSize && selectedColor && product.stock && product.stock[selectedSize]) {
+      const stockCount = product.stock[selectedSize][selectedColor] || 0;
+      if (stockCount < quantity) {
+        alert(`Only ${stockCount} items available in stock`);
+        return;
+      }
+    }
+
     // 如果配置了按钮跳转，则跳转到指定 URL
     if (buttonConfig && buttonConfig.action_type === 'link' && buttonConfig.target_url) {
       // 记录点击统计
@@ -79,7 +116,12 @@ export default function ProductDetail() {
       fetch(buttonConfig.api_endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: product.id, quantity }),
+        body: JSON.stringify({ 
+          product_id: product.id, 
+          quantity,
+          size: selectedSize,
+          color: selectedColor
+        }),
       }).then(() => {
         alert('Product added successfully!');
       }).catch(() => {
@@ -89,7 +131,11 @@ export default function ProductDetail() {
     }
     
     // 默认行为：添加到购物车
-    alert(`Added ${quantity} x ${product.name} to cart!`);
+    const variantInfo = [];
+    if (selectedSize) variantInfo.push(`Size: ${selectedSize}`);
+    if (selectedColor) variantInfo.push(`Color: ${selectedColor}`);
+    const variantText = variantInfo.length > 0 ? ` (${variantInfo.join(', ')})` : '';
+    alert(`Added ${quantity} x ${product.name}${variantText} to cart!`);
   };
 
   const handleQuantityChange = (delta) => {
@@ -143,10 +189,30 @@ export default function ProductDetail() {
             <div>
               <div className="relative mb-4">
                 <img
-                  src={product.image}
+                  src={product.images && product.images[selectedImage] ? product.images[selectedImage] : product.image}
                   alt={product.name}
                   className="w-full h-[500px] object-cover rounded-lg"
                 />
+                {/* 图片缩略图 */}
+                {product.images && product.images.length > 1 && (
+                  <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                    {product.images.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                          selectedImage === index ? 'border-rose-600 ring-2 ring-rose-200' : 'border-gray-300 hover:border-rose-300'
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${product.name} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* 促销标签 */}
                 {product.onSale && (
                   <div className="absolute top-4 left-4">
@@ -227,7 +293,98 @@ export default function ProductDetail() {
                 {product.description || 'Premium quality product with exceptional design and craftsmanship.'}
               </p>
 
-              {/* Size/Options */}
+              {/* Size Selection */}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Size {selectedSize && <span className="text-gray-500">({selectedSize})</span>}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((size) => {
+                      // 如果已选择颜色，检查该尺码和颜色的库存
+                      const isAvailable = selectedColor && product.stock && product.stock[size]
+                        ? (product.stock[size][selectedColor] || 0) > 0
+                        : product.colors && product.colors.length > 0
+                        ? product.colors.some(color => 
+                            product.stock && product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                          )
+                        : true;
+                      const isSelected = selectedSize === size;
+                      return (
+                        <button
+                          key={size}
+                          onClick={() => setSelectedSize(size)}
+                          disabled={!isAvailable}
+                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
+                            isSelected
+                              ? 'border-rose-600 bg-rose-50 text-rose-600'
+                              : isAvailable
+                              ? 'border-gray-300 hover:border-rose-300 text-gray-700'
+                              : 'border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Color Selection */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Color {selectedColor && <span className="text-gray-500">({selectedColor})</span>}
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color) => {
+                      // 如果已选择尺码，检查该尺码和颜色的库存
+                      const isAvailable = selectedSize && product.stock && product.stock[selectedSize]
+                        ? (product.stock[selectedSize][color.name] || 0) > 0
+                        : product.sizes && product.sizes.length > 0
+                        ? product.sizes.some(size => 
+                            product.stock && product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                          )
+                        : true;
+                      const isSelected = selectedColor === color.name;
+                      return (
+                        <button
+                          key={color.name}
+                          onClick={() => {
+                            setSelectedColor(color.name);
+                            // 如果选择了颜色，更新主图片
+                            if (color.image) {
+                              const imageIndex = product.images?.findIndex(img => img === color.image);
+                              if (imageIndex >= 0) {
+                                setSelectedImage(imageIndex);
+                              }
+                            }
+                          }}
+                          disabled={!isAvailable}
+                          className={`relative w-12 h-12 rounded-full border-2 transition-all ${
+                            isSelected
+                              ? 'border-rose-600 ring-2 ring-rose-200 scale-110'
+                              : isAvailable
+                              ? 'border-gray-300 hover:border-rose-300'
+                              : 'border-gray-200 opacity-50 cursor-not-allowed'
+                          }`}
+                          style={{ backgroundColor: color.code }}
+                          title={color.name}
+                        >
+                          {isSelected && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Quantity
@@ -248,6 +405,14 @@ export default function ProductDetail() {
                       <Plus className="w-5 h-5" />
                     </button>
                   </div>
+                  {/* 显示库存信息 */}
+                  {selectedSize && selectedColor && product.stock && product.stock[selectedSize] && (
+                    <span className="text-sm text-gray-600">
+                      {product.stock[selectedSize][selectedColor] > 0
+                        ? `${product.stock[selectedSize][selectedColor]} in stock`
+                        : 'Out of stock'}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -255,10 +420,19 @@ export default function ProductDetail() {
               <div className="flex gap-4 mb-6">
                 <button
                   onClick={handleAddToCart}
-                  className="flex-1 flex items-center justify-center gap-2 bg-rose-600 text-white py-4 rounded-lg hover:bg-rose-700 transition-colors font-semibold text-lg"
+                  disabled={
+                    (product.sizes && product.sizes.length > 0 && !selectedSize) ||
+                    (product.colors && product.colors.length > 0 && !selectedColor) ||
+                    (selectedSize && selectedColor && product.stock && product.stock[selectedSize] && 
+                     product.stock[selectedSize][selectedColor] === 0)
+                  }
+                  className="flex-1 flex items-center justify-center gap-2 bg-rose-600 text-white py-4 rounded-lg hover:bg-rose-700 transition-colors font-semibold text-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="w-6 h-6" />
-                  Add to Cart
+                  {(selectedSize && selectedColor && product.stock && product.stock[selectedSize] && 
+                    product.stock[selectedSize][selectedColor] === 0)
+                    ? 'Out of Stock'
+                    : 'Add to Cart'}
                 </button>
                 <button
                   onClick={() => setIsFavorite(!isFavorite)}
