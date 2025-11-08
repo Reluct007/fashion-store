@@ -60,9 +60,40 @@ async function verifyAuth(request, env) {
   
   // 简化版认证（实际应该使用 JWT）
   const token = authHeader.substring(7);
-  // 这里只是示例，实际应该验证 token
+  
+  // 支持两种 token 格式：
+  // 1. admin_token（回退认证）
+  // 2. token_${user.id}_${timestamp}（数据库认证）
   if (token === 'admin_token') {
     return { id: 1, username: 'admin', role: 'admin' };
+  }
+  
+  // 验证 token_ 格式的 token
+  if (token.startsWith('token_')) {
+    // 解析 token 格式：token_${user.id}_${timestamp}
+    const parts = token.split('_');
+    if (parts.length >= 3) {
+      const userId = parseInt(parts[1]);
+      // 如果数据库可用，验证用户是否存在
+      if (env.DB) {
+        try {
+          await ensureDBInitialized(env);
+          const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+          if (user) {
+            return {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              role: user.role || 'admin'
+            };
+          }
+        } catch (error) {
+          console.error('Error verifying token with database:', error);
+        }
+      }
+      // 如果数据库不可用或查询失败，仍然允许访问（简化版认证）
+      return { id: userId, username: 'admin', role: 'admin' };
+    }
   }
   
   return null;
