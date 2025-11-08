@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, TrendingUp, 
-  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail
+  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail, Check
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct, getEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
@@ -127,10 +127,12 @@ export default function Admin() {
       setLoadingSubscriptions(true);
       setError(null);
       const data = await getEmailSubscriptions({ limit: 1000 });
-      setEmailSubscriptions(data);
+      setEmailSubscriptions(data || []);
     } catch (err) {
       setError('Failed to load email subscriptions: ' + err.message);
       console.error('Error loading email subscriptions:', err);
+      // 如果加载失败，设置空数组，避免页面空白
+      setEmailSubscriptions([]);
     } finally {
       setLoadingSubscriptions(false);
     }
@@ -138,10 +140,13 @@ export default function Admin() {
 
   const loadEmailStats = async () => {
     try {
+      setError(null);
       const stats = await getEmailSubscriptionStats();
       setEmailStats(stats);
     } catch (err) {
       console.error('Error loading email stats:', err);
+      // 如果加载失败，设置默认值，避免页面空白
+      setEmailStats({ total: 0, active: 0, unsubscribed: 0 });
     }
   };
 
@@ -510,6 +515,13 @@ export default function Admin() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Email Subscriptions Management</h2>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                {error}
+              </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
