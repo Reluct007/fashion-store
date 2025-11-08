@@ -47,10 +47,12 @@ export default function ProductConfigManager() {
       let productId = 0;
       if (formData.page_type === 'product') {
         productId = parseInt(formData.product_id) || 0;
-        if (!productId) {
-          setError('Please select a product');
+        if (!productId || productId === 0) {
+          setError('Please select a product or "All Products"');
           return;
         }
+        // -999 表示所有产品
+        // 其他正数表示特定产品
       } else if (formData.page_type === 'home') {
         productId = 0;
       } else if (formData.page_type === 'page') {
@@ -102,13 +104,15 @@ export default function ProductConfigManager() {
     let pageType = 'product';
     if (config.product_id === 0) {
       pageType = 'home';
+    } else if (config.product_id === -999) {
+      pageType = 'product'; // All Products 仍然是 product 类型
     } else if (config.product_id < 0 || config.page_path) {
       pageType = 'page';
     }
     
     setFormData({
       page_type: pageType,
-      product_id: config.product_id > 0 ? config.product_id.toString() : '',
+      product_id: config.product_id > 0 || config.product_id === -999 ? config.product_id.toString() : '',
       page_path: config.page_path || '',
       button_type: config.button_type,
       action_type: config.action_type,
@@ -121,6 +125,8 @@ export default function ProductConfigManager() {
   const getPageName = (productId, pagePath) => {
     if (productId === 0) {
       return 'Home Page';
+    } else if (productId === -999) {
+      return 'All Products';
     } else if (productId < 0 || pagePath) {
       return pagePath || 'Custom Page';
     } else {
@@ -206,6 +212,7 @@ export default function ProductConfigManager() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
                 >
                   <option value="">Select Product</option>
+                  <option value="-999">All Products</option>
                   {products.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} (#{product.id})

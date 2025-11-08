@@ -159,14 +159,63 @@ export async function getProduct(id) {
   
   if (staticMatch) {
     const index = staticProducts.indexOf(staticMatch);
-    return normalizeProduct(staticMatch, index);
+    const product = normalizeProduct(staticMatch, index);
+    
+    // 为静态产品加载配置（包括"所有产品"配置）
+    try {
+      const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
+        headers: getAuthHeaders(),
+      });
+      if (configsResponse.ok) {
+        const allConfigs = await configsResponse.json();
+        // 首先尝试查找特定产品的配置（虽然静态产品 ID 是字符串，但我们可以尝试）
+        // 然后查找"所有产品"的配置（product_id = -999）
+        const allProductsConfig = allConfigs.find(
+          config => config.product_id === -999 && 
+                   config.button_type === 'add_to_cart' && 
+                   (config.is_enabled === 1 || config.is_enabled === true)
+        );
+        if (allProductsConfig) {
+          product.buttonConfig = allProductsConfig;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load product config for static product:', error);
+    }
+    
+    return product;
   }
   
   // 从 API 获取
   try {
     const response = await fetch(`${API_URL}/api/products/${id}`);
     if (response.ok) {
-      return await response.json();
+      const product = await response.json();
+      
+      // 如果 API 返回的产品没有配置，尝试加载"所有产品"的配置
+      if (!product.buttonConfig) {
+        try {
+          const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
+            headers: getAuthHeaders(),
+          });
+          if (configsResponse.ok) {
+            const allConfigs = await configsResponse.json();
+            // 查找"所有产品"的配置（product_id = -999）
+            const allProductsConfig = allConfigs.find(
+              config => config.product_id === -999 && 
+                       config.button_type === 'add_to_cart' && 
+                       (config.is_enabled === 1 || config.is_enabled === true)
+            );
+            if (allProductsConfig) {
+              product.buttonConfig = allProductsConfig;
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to load all products config:', error);
+        }
+      }
+      
+      return product;
     }
   } catch (error) {
     console.warn('Failed to fetch product from API:', error);

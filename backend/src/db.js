@@ -146,11 +146,21 @@ export async function getProductConfig(env, productId, buttonType) {
   if (!env.DB) return null;
 
   try {
-    const config = await env.DB.prepare(
+    // 首先尝试获取特定产品的配置
+    const specificConfig = await env.DB.prepare(
       'SELECT * FROM product_configs WHERE product_id = ? AND button_type = ? AND is_enabled = 1'
     ).bind(productId, buttonType).first();
-
-    return config;
+    
+    if (specificConfig) {
+      return specificConfig;
+    }
+    
+    // 如果没有特定产品的配置，尝试获取所有产品的配置（product_id = -999）
+    const allProductsConfig = await env.DB.prepare(
+      'SELECT * FROM product_configs WHERE product_id = ? AND button_type = ? AND is_enabled = 1'
+    ).bind(-999, buttonType).first();
+    
+    return allProductsConfig;
   } catch (error) {
     console.error('Get product config error:', error);
     return null;
