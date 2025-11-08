@@ -329,10 +329,10 @@ async function getProductConfigs(request, env) {
   
   // 检查是否需要认证
   const user = await verifyAuth(request, env);
-  // 如果未认证，只返回启用的公开配置（这里为了简化，允许未认证访问）
-  // 实际生产环境可能需要更严格的权限控制
+  // 如果已认证，返回所有配置；如果未认证，只返回启用的配置（用于产品页面应用配置）
+  const publicOnly = !user;
   
-  const configs = await getAllProductConfigs(env);
+  const configs = await getAllProductConfigs(env, publicOnly);
   return new Response(JSON.stringify(configs), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
   });

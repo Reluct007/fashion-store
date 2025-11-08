@@ -170,11 +170,17 @@ export async function getProductConfig(env, productId, buttonType) {
 /**
  * 获取所有产品配置
  */
-export async function getAllProductConfigs(env) {
+export async function getAllProductConfigs(env, publicOnly = false) {
   if (!env.DB) return [];
 
   try {
-    const configs = await env.DB.prepare('SELECT * FROM product_configs ORDER BY product_id, button_type').all();
+    let query = 'SELECT * FROM product_configs';
+    if (publicOnly) {
+      // 只返回启用的配置（公开访问时）
+      query += ' WHERE is_enabled = 1';
+    }
+    query += ' ORDER BY product_id, button_type';
+    const configs = await env.DB.prepare(query).all();
     return configs.results || [];
   } catch (error) {
     console.error('Get all product configs error:', error);
