@@ -231,34 +231,31 @@ export async function getProduct(id) {
     const index = staticProducts.indexOf(staticMatch);
     const product = normalizeProduct(staticMatch, index);
     
-    // 为静态产品加载配置
-    // 由于静态产品的 ID 是字符串格式（static_0），无法直接匹配数据库中的 product_id
-    // 所以我们直接查找"所有产品"配置（product_id = -999）
-    // 注意：这里需要使用公开 API，避免认证问题
+    // 为静态产品加载"所有产品"配置
     try {
-      // 尝试通过后端 API 获取"所有产品"配置
-      // 由于静态产品无法通过后端 getProduct API 获取，我们直接调用配置 API
-      // 但配置 API 需要认证，所以如果失败就忽略（用户可以在产品详情页看到默认行为）
+      // 尝试获取配置（即使没有认证 token）
+      const headers = {};
       const token = getAuthToken();
       if (token) {
-        const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
-          headers: getAuthHeaders(),
-        });
-        if (configsResponse.ok) {
-          const allConfigs = await configsResponse.json();
-          // 查找"所有产品"的配置（product_id = -999）
-          const allProductsConfig = allConfigs.find(
-            config => config.product_id === -999 && 
-                     config.button_type === 'add_to_cart' && 
-                     (config.is_enabled === 1 || config.is_enabled === true)
-          );
-          if (allProductsConfig) {
-            product.buttonConfig = allProductsConfig;
-          }
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      headers['Content-Type'] = 'application/json';
+      
+      const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
+        headers: headers,
+      });
+      if (configsResponse.ok) {
+        const allConfigs = await configsResponse.json();
+        const allProductsConfig = allConfigs.find(
+          config => config.product_id === -999 && 
+                   config.button_type === 'add_to_cart' && 
+                   (config.is_enabled === 1 || config.is_enabled === true)
+        );
+        if (allProductsConfig) {
+          product.buttonConfig = allProductsConfig;
         }
       }
     } catch (error) {
-      // 静默失败，不影响产品加载
       console.warn('Failed to load product config for static product:', error);
     }
     
