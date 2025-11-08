@@ -128,29 +128,37 @@ export async function getProducts(category = null) {
   
   // 为没有配置的产品应用"所有产品"配置
   // 这包括静态产品和没有特定配置的 API 产品
+  // 注意：后端 API 已经为 API 产品应用了配置（包括"所有产品"配置的回退）
+  // 这里主要是为静态产品加载"所有产品"配置
   try {
+    // 尝试获取配置（即使没有认证 token，后端可能也允许访问）
+    const headers = {};
     const token = getAuthToken();
     if (token) {
-      const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
-        headers: getAuthHeaders(),
-      });
-      if (configsResponse.ok) {
-        const allConfigs = await configsResponse.json();
-        // 查找"所有产品"配置（product_id = -999）
-        const allProductsConfig = allConfigs.find(
-          config => config.product_id === -999 && 
-                   config.button_type === 'add_to_cart' && 
-                   (config.is_enabled === 1 || config.is_enabled === true)
-        );
-        
-        if (allProductsConfig) {
-          // 为没有配置的产品应用"所有产品"配置
-          mergedProducts.forEach(product => {
-            if (!product.buttonConfig) {
-              product.buttonConfig = allProductsConfig;
-            }
-          });
-        }
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    headers['Content-Type'] = 'application/json';
+    
+    const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
+      headers: headers,
+    });
+    if (configsResponse.ok) {
+      const allConfigs = await configsResponse.json();
+      // 查找"所有产品"配置（product_id = -999）
+      const allProductsConfig = allConfigs.find(
+        config => config.product_id === -999 && 
+                 config.button_type === 'add_to_cart' && 
+                 (config.is_enabled === 1 || config.is_enabled === true)
+      );
+      
+      if (allProductsConfig) {
+        // 为没有配置的产品应用"所有产品"配置
+        // 主要是静态产品，因为 API 产品的配置已经在后端处理
+        mergedProducts.forEach(product => {
+          if (!product.buttonConfig) {
+            product.buttonConfig = allProductsConfig;
+          }
+        });
       }
     }
   } catch (error) {
@@ -183,21 +191,26 @@ export async function getProduct(id) {
       
       // 为静态产品加载"所有产品"配置
       try {
+        // 尝试获取配置（即使没有认证 token）
+        const headers = {};
         const token = getAuthToken();
         if (token) {
-          const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
-            headers: getAuthHeaders(),
-          });
-          if (configsResponse.ok) {
-            const allConfigs = await configsResponse.json();
-            const allProductsConfig = allConfigs.find(
-              config => config.product_id === -999 && 
-                       config.button_type === 'add_to_cart' && 
-                       (config.is_enabled === 1 || config.is_enabled === true)
-            );
-            if (allProductsConfig) {
-              product.buttonConfig = allProductsConfig;
-            }
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        headers['Content-Type'] = 'application/json';
+        
+        const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
+          headers: headers,
+        });
+        if (configsResponse.ok) {
+          const allConfigs = await configsResponse.json();
+          const allProductsConfig = allConfigs.find(
+            config => config.product_id === -999 && 
+                     config.button_type === 'add_to_cart' && 
+                     (config.is_enabled === 1 || config.is_enabled === true)
+          );
+          if (allProductsConfig) {
+            product.buttonConfig = allProductsConfig;
           }
         }
       } catch (error) {

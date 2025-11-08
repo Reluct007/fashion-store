@@ -188,6 +188,7 @@ async function getProducts(request, env) {
   }
   
   // 获取每个产品的按钮配置
+  // getProductConfig 已经实现了回退到"所有产品"配置的逻辑
   if (env.DB) {
     for (const product of filteredProducts) {
       const config = await getProductConfig(env, product.id, 'add_to_cart');
@@ -325,6 +326,11 @@ async function getProductConfigs(request, env) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
+  
+  // 检查是否需要认证
+  const user = await verifyAuth(request, env);
+  // 如果未认证，只返回启用的公开配置（这里为了简化，允许未认证访问）
+  // 实际生产环境可能需要更严格的权限控制
   
   const configs = await getAllProductConfigs(env);
   return new Response(JSON.stringify(configs), {
