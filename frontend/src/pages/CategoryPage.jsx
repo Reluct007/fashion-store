@@ -28,7 +28,7 @@ export default function CategoryPage() {
 
   useEffect(() => {
     loadProducts();
-  }, [category]);
+  }, [category, location.pathname]);
 
   const loadProducts = async () => {
     try {
@@ -135,6 +135,7 @@ export default function CategoryPage() {
   // 获取页面标题
   const getPageTitle = () => {
     if (!category) return 'All Products';
+    const categoryLower = category.toLowerCase();
     const categoryMap = {
       'women': 'Women\'s Fashion',
       'men': 'Men\'s Fashion',
@@ -148,7 +149,7 @@ export default function CategoryPage() {
       'sale': 'Sale',
       'trending': 'Trending'
     };
-    return categoryMap[category.toLowerCase()] || category.charAt(0).toUpperCase() + category.slice(1);
+    return categoryMap[categoryLower] || category.charAt(0).toUpperCase() + category.slice(1);
   };
 
   if (loading) {

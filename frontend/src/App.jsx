@@ -6,6 +6,7 @@ import CategoryPage from './pages/CategoryPage';
 import ProductDetail from './pages/ProductDetail';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import StaticPage from './pages/StaticPage';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -35,6 +36,16 @@ function App() {
         <Route path="/category/:category" element={<CategoryPage />} />
         <Route path="/collection/:category" element={<CategoryPage />} />
         <Route path="/sale" element={<CategoryPage />} />
+        {/* Static Pages */}
+        <Route path="/careers" element={<StaticPage />} />
+        <Route path="/blog" element={<StaticPage />} />
+        <Route path="/shipping" element={<StaticPage />} />
+        <Route path="/returns" element={<StaticPage />} />
+        <Route path="/size-guide" element={<StaticPage />} />
+        <Route path="/faq" element={<StaticPage />} />
+        <Route path="/privacy" element={<StaticPage />} />
+        <Route path="/terms" element={<StaticPage />} />
+        <Route path="/cookies" element={<StaticPage />} />
       </Routes>
     </Router>
   );
