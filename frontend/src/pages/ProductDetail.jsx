@@ -546,24 +546,36 @@ export default function ProductDetail() {
           </div>
 
           {/* Description and Features Section */}
-          <div className="mb-12">
+          <div className="mb-12 space-y-8">
             {/* Description */}
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Description</h2>
-              <p className="text-gray-600 leading-relaxed">
-                {product.description || 'Premium quality product with exceptional design and craftsmanship.'}
-              </p>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 pb-2 border-b border-gray-200">Description</h2>
+              <div className="mt-4">
+                <p className="text-gray-700 leading-relaxed text-base">
+                  {product.description || 'Premium quality product with exceptional design and craftsmanship.'}
+                </p>
+              </div>
             </div>
 
             {/* Features Module */}
             {product.features && product.features.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Features</h2>
-                <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-2 border-b border-gray-200">Features</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   {product.features.map((feature, index) => (
-                    <div key={index} className="border-l-4 border-rose-600 pl-4">
-                      <h4 className="font-semibold text-gray-900 mb-1">{feature.title}</h4>
-                      <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                    <div 
+                      key={index} 
+                      className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center mt-0.5">
+                          <Check className="w-5 h-5 text-rose-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-2 text-lg">{feature.title}</h4>
+                          <p className="text-gray-600 leading-relaxed text-sm">{feature.description}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
