@@ -17,6 +17,7 @@ export default function ProductDetail() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [displayImage, setDisplayImage] = useState(''); // 当前显示的主图URL
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -39,19 +40,24 @@ export default function ProductDetail() {
       const productData = await getProduct(id);
       setProduct(productData);
       
-      // 初始化默认选择的尺码和颜色
+      // 初始化默认选择的尺码和颜色，并设置主图
       if (productData.sizes && productData.sizes.length > 0) {
         setSelectedSize(productData.sizes[0]);
       }
       if (productData.colors && productData.colors.length > 0) {
         setSelectedColor(productData.colors[0].name);
-        // 如果第一个颜色有图片，更新主图片
+        // 如果第一个颜色有图片，直接使用该颜色图片作为主图
         if (productData.colors[0].image) {
-          const imageIndex = productData.images?.findIndex(img => img === productData.colors[0].image);
-          if (imageIndex >= 0) {
-            setSelectedImage(imageIndex);
-          }
+          setDisplayImage(productData.colors[0].image);
+        } else if (productData.images && productData.images.length > 0) {
+          setDisplayImage(productData.images[0]);
+        } else if (productData.image) {
+          setDisplayImage(productData.image);
         }
+      } else if (productData.images && productData.images.length > 0) {
+        setDisplayImage(productData.images[0]);
+      } else if (productData.image) {
+        setDisplayImage(productData.image);
       }
       
       // 加载相关产品
@@ -189,30 +195,72 @@ export default function ProductDetail() {
             <div>
               <div className="relative mb-4">
                 <img
-                  src={product.images && product.images[selectedImage] ? product.images[selectedImage] : product.image}
+                  src={displayImage || (product.images && product.images[selectedImage] ? product.images[selectedImage] : product.image)}
                   alt={product.name}
                   className="w-full h-[500px] object-cover rounded-lg"
+                  onError={(e) => {
+                    // 如果当前图片加载失败，回退到默认图片
+                    if (displayImage && displayImage !== product.image) {
+                      setDisplayImage(product.image || (product.images && product.images[0]));
+                    }
+                  }}
                 />
-                {/* 图片缩略图 */}
-                {product.images && product.images.length > 1 && (
+                {/* 图片缩略图 - 显示所有图片，包括颜色图片 */}
+                {(product.images && product.images.length > 1) || (product.colors && product.colors.some(c => c.image)) ? (
                   <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                    {product.images.map((img, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedImage(index)}
-                        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                          selectedImage === index ? 'border-rose-600 ring-2 ring-rose-200' : 'border-gray-300 hover:border-rose-300'
-                        }`}
-                      >
-                        <img
-                          src={img}
-                          alt={`${product.name} ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+                    {/* 显示主图片列表 */}
+                    {product.images && product.images.map((img, index) => {
+                      const isCurrentImage = displayImage === img || (!displayImage && selectedImage === index);
+                      return (
+                        <button
+                          key={`main-${index}`}
+                          onClick={() => {
+                            setDisplayImage(img);
+                            setSelectedImage(index);
+                          }}
+                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                            isCurrentImage ? 'border-rose-600 ring-2 ring-rose-200' : 'border-gray-300 hover:border-rose-300'
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt={`${product.name} ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      );
+                    })}
+                    {/* 显示颜色图片（如果颜色图片不在主图片列表中） */}
+                    {product.colors && product.colors.map((color, index) => {
+                      if (!color.image) return null;
+                      // 检查颜色图片是否已在主图片列表中
+                      const isInMainImages = product.images && product.images.includes(color.image);
+                      if (isInMainImages) return null;
+                      const isCurrentImage = displayImage === color.image;
+                      return (
+                        <button
+                          key={`color-${index}`}
+                          onClick={() => {
+                            setDisplayImage(color.image);
+                            setSelectedColor(color.name);
+                          }}
+                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                            isCurrentImage || selectedColor === color.name
+                              ? 'border-rose-600 ring-2 ring-rose-200' 
+                              : 'border-gray-300 hover:border-rose-300'
+                          }`}
+                          title={color.name}
+                        >
+                          <img
+                            src={color.image}
+                            alt={color.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+                ) : null}
                 {/* 促销标签 */}
                 {product.onSale && (
                   <div className="absolute top-4 left-4">
@@ -348,13 +396,17 @@ export default function ProductDetail() {
                           )
                         : true;
                       const isSelected = selectedColor === color.name;
+                      const hasColorImage = color.image && color.image.trim() !== '';
+                      
                       return (
                         <button
                           key={color.name}
                           onClick={() => {
                             setSelectedColor(color.name);
-                            // 如果选择了颜色，更新主图片
+                            // 如果选择了颜色，切换主图片到该颜色的图片
                             if (color.image) {
+                              setDisplayImage(color.image);
+                              // 如果该颜色图片在主图片列表中，也更新selectedImage索引
                               const imageIndex = product.images?.findIndex(img => img === color.image);
                               if (imageIndex >= 0) {
                                 setSelectedImage(imageIndex);
@@ -362,20 +414,45 @@ export default function ProductDetail() {
                             }
                           }}
                           disabled={!isAvailable}
-                          className={`relative w-12 h-12 rounded-full border-2 transition-all ${
+                          className={`relative rounded-lg border-2 transition-all overflow-hidden ${
                             isSelected
                               ? 'border-rose-600 ring-2 ring-rose-200 scale-110'
                               : isAvailable
                               ? 'border-gray-300 hover:border-rose-300'
                               : 'border-gray-200 opacity-50 cursor-not-allowed'
-                          }`}
-                          style={{ backgroundColor: color.code }}
+                          } ${hasColorImage ? 'w-16 h-16' : 'w-12 h-12 rounded-full'}`}
+                          style={!hasColorImage ? { backgroundColor: color.code } : {}}
                           title={color.name}
                         >
-                          {isSelected && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Check className="w-6 h-6 text-white drop-shadow-lg" />
-                            </div>
+                          {hasColorImage ? (
+                            <>
+                              <img
+                                src={color.image}
+                                alt={color.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // 如果图片加载失败，回退到颜色代码
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.style.backgroundColor = color.code;
+                                  e.target.parentElement.classList.add('rounded-full');
+                                  e.target.parentElement.classList.remove('rounded-lg');
+                                }}
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                  <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-full h-full" style={{ backgroundColor: color.code }} />
+                              {isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                                </div>
+                              )}
+                            </>
                           )}
                         </button>
                       );
