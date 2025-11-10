@@ -336,11 +336,6 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Description */}
-              <p className="text-gray-600 mb-6">
-                {product.description || 'Premium quality product with exceptional design and craftsmanship.'}
-              </p>
-
               {/* Size Selection */}
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-6">
@@ -548,6 +543,32 @@ export default function ProductDetail() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Description and Features Section */}
+          <div className="mb-12">
+            {/* Description */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Description</h2>
+              <p className="text-gray-600 leading-relaxed">
+                {product.description || 'Premium quality product with exceptional design and craftsmanship.'}
+              </p>
+            </div>
+
+            {/* Features Module */}
+            {product.features && product.features.length > 0 && (
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Product Features</h2>
+                <div className="space-y-4">
+                  {product.features.map((feature, index) => (
+                    <div key={index} className="border-l-4 border-rose-600 pl-4">
+                      <h4 className="font-semibold text-gray-900 mb-1">{feature.title}</h4>
+                      <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Related Products */}
