@@ -3,7 +3,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://fashion-store-api.reluct007.workers.dev';
 
 // 导入slug工具函数
-import { generateUniqueSlug, findProductByIdentifier } from './slug';
+import { generateSlug, findProductByIdentifier } from './slug';
 
 // 静态产品数据缓存
 let staticProductsCache = null;
@@ -54,7 +54,30 @@ function resetSlugMapCache() {
  * 将静态产品数据转换为 API 格式
  */
 function normalizeProduct(product, index, slugMap = null) {
+  // 处理不同的数据格式（支持originalprice/sellingprice和originalPrice/price）
   const title = product.title || product.name || 'Product';
+  const price = product.price || product.sellingprice || 0;
+  const originalPrice = product.originalPrice || product.originalprice || null;
+  
+  // 处理sizes和colors（可能是字符串格式的JSON）
+  let sizes = product.sizes || [];
+  let colors = product.colors || [];
+  
+  if (typeof product.size === 'string') {
+    try {
+      sizes = JSON.parse(product.size);
+    } catch (e) {
+      console.warn('Failed to parse size:', e);
+    }
+  }
+  
+  if (typeof product.color === 'string') {
+    try {
+      colors = JSON.parse(product.color);
+    } catch (e) {
+      console.warn('Failed to parse color:', e);
+    }
+  }
   
   // 从静态数据格式转换为前端使用的格式
   // 注意：slug会在mergeProducts函数中统一生成和处理，这里先不设置
@@ -64,18 +87,18 @@ function normalizeProduct(product, index, slugMap = null) {
     name: title,
     title: title,
     description: product.description || '',
-    price: product.price || 0,
-    originalPrice: product.originalPrice || null,
+    price: price,
+    originalPrice: originalPrice,
     image: product.image || '',
     images: product.images || [],
     category: product.category || 'Uncategorized',
     rating: product.rating || 0,
     reviews: product.reviews || 0,
-    onSale: product.onSale || false,
+    onSale: product.onSale || (originalPrice && price && originalPrice > price),
     features: product.features || [],
     // 尺码、颜色和库存信息
-    sizes: product.sizes || [],
-    colors: product.colors || [],
+    sizes: sizes,
+    colors: colors,
     stock: product.stock || {},
     // 保留原始静态数据
     _isStatic: true,
@@ -296,7 +319,7 @@ export async function getProduct(identifier) {
       // 如果API产品没有slug，生成一个
       if (!product.slug) {
         const title = product.title || product.name || 'Product';
-        product.slug = generateUniqueSlug(title, 0, new Map());
+        product.slug = generateSlug(title) || `product-${Date.now()}`;
       }
       
       return product;
