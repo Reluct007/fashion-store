@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
 import { getProducts } from '../lib/api';
+import { getProductUrlIdentifier } from '../lib/slug';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 
@@ -216,7 +217,7 @@ export default function CategoryPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => {
-                const productId = product.id || `static_${products.indexOf(product)}`;
+                const productIdentifier = getProductUrlIdentifier(product);
                 const productName = product.name || product.title || 'Product';
                 const productImage = product.image || (product.images && product.images[0]) || '';
                 const productPrice = product.price || 0;
@@ -227,11 +228,11 @@ export default function CategoryPage() {
 
                 return (
                   <div
-                    key={productId}
+                    key={product.id || product.slug || productIdentifier}
                     className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
                   >
                     <div className="relative overflow-hidden">
-                      <Link to={`/product/${productId}`}>
+                      <Link to={`/product/${productIdentifier}`}>
                         <img
                           src={productImage}
                           alt={productName}
@@ -247,19 +248,19 @@ export default function CategoryPage() {
                         </span>
                       )}
                       <button
-                        onClick={() => toggleFavorite(productId)}
+                        onClick={() => toggleFavorite(productIdentifier)}
                         className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors ${
-                          favorites.has(productId) ? 'text-rose-600' : 'text-gray-400'
+                          favorites.has(productIdentifier) ? 'text-rose-600' : 'text-gray-400'
                         }`}
                       >
-                        <Heart className={`w-5 h-5 ${favorites.has(productId) ? 'fill-current' : ''}`} />
+                        <Heart className={`w-5 h-5 ${favorites.has(productIdentifier) ? 'fill-current' : ''}`} />
                       </button>
                     </div>
 
                     {/* Product Info */}
                     <div className="p-6">
                       <p className="text-sm text-gray-500 mb-2">{product.category || 'Fashion'}</p>
-                      <Link to={`/product/${productId}`}>
+                      <Link to={`/product/${productIdentifier}`}>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-rose-600 transition-colors line-clamp-2">
                           {productName}
                         </h3>

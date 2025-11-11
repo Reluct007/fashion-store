@@ -2,6 +2,9 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fashion-store-api.reluct007.workers.dev';
 
+// 导入slug工具函数
+import { generateUniqueSlug, findProductByIdentifier } from './slug';
+
 // 静态产品数据缓存
 let staticProductsCache = null;
 let staticProductsLoading = false;
@@ -37,15 +40,29 @@ async function loadStaticProducts() {
   return staticProductsCache;
 }
 
+// Slug映射缓存（用于处理重复标题）
+let slugMapCache = null;
+
+/**
+ * 重置slug映射缓存（在需要重新生成时调用）
+ */
+function resetSlugMapCache() {
+  slugMapCache = null;
+}
+
 /**
  * 将静态产品数据转换为 API 格式
  */
-function normalizeProduct(product, index) {
+function normalizeProduct(product, index, slugMap = null) {
+  const title = product.title || product.name || 'Product';
+  
   // 从静态数据格式转换为前端使用的格式
+  // 注意：slug会在mergeProducts函数中统一生成和处理，这里先不设置
   return {
-    id: `static_${index}`, // 静态产品使用特殊 ID 前缀
-    name: product.title || product.name || 'Product',
-    title: product.title || product.name || 'Product',
+    id: `static_${index}`, // 静态产品使用特殊 ID 前缀（保留用于向后兼容）
+    slug: '', // 将在mergeProducts中设置
+    name: title,
+    title: title,
     description: product.description || '',
     price: product.price || 0,
     originalPrice: product.originalPrice || null,
@@ -72,6 +89,7 @@ function normalizeProduct(product, index) {
 function mergeProducts(staticProductsList, apiProducts) {
   const merged = [];
   const apiProductMap = new Map();
+  const slugMap = new Map(); // 用于跟踪所有已使用的slug
   
   // 将 API 产品转换为 Map（使用 title/name 作为键）
   apiProducts.forEach(product => {
@@ -79,22 +97,70 @@ function mergeProducts(staticProductsList, apiProducts) {
     if (key) {
       apiProductMap.set(key, product);
     }
+    
+    // 如果API产品有slug，也添加到slugMap
+    if (product.slug) {
+      slugMap.set(product.slug, product);
+    }
   });
   
   // 先添加静态产品（优先级更高）
   staticProductsList.forEach((product, index) => {
-    const normalized = normalizeProduct(product, index);
+    const title = product.title || product.name || 'Product';
+    
+    // 生成基础slug
+    let baseSlug = generateSlug(title);
+    
+    // 如果slug为空，使用索引作为后备
+    if (!baseSlug) {
+      baseSlug = `product-${index}`;
+    }
+    
+    // 确保slug唯一性（检查是否与已存在的slug冲突）
+    let finalSlug = baseSlug;
+    let slugCounter = 0;
+    while (slugMap.has(finalSlug)) {
+      slugCounter++;
+      // 如果冲突，添加数字后缀
+      finalSlug = `${baseSlug}-${slugCounter}`;
+    }
+    
+    // 创建标准化产品对象
+    const normalized = normalizeProduct(product, index, null);
+    normalized.slug = finalSlug; // 使用最终确定的slug
+    slugMap.set(finalSlug, normalized);
+    
     merged.push(normalized);
     
     // 如果 API 中有同名产品，移除它（静态数据优先）
-    const key = (product.title || product.name || '').toLowerCase().trim();
+    const key = title.toLowerCase().trim();
     if (key) {
       apiProductMap.delete(key);
     }
   });
   
-  // 添加剩余的 API 产品
-  apiProductMap.forEach(product => {
+  // 添加剩余的 API 产品，为它们生成slug（如果还没有）
+  apiProductMap.forEach((product) => {
+    if (!product.slug) {
+      const title = product.title || product.name || 'Product';
+      let baseSlug = generateSlug(title);
+      
+      // 如果slug为空，使用索引作为后备
+      if (!baseSlug) {
+        baseSlug = `product-${merged.length}`;
+      }
+      
+      // 确保slug唯一
+      let finalSlug = baseSlug;
+      let slugCounter = 0;
+      while (slugMap.has(finalSlug)) {
+        slugCounter++;
+        finalSlug = `${baseSlug}-${slugCounter}`;
+      }
+      
+      product.slug = finalSlug;
+      slugMap.set(finalSlug, product);
+    }
     merged.push(product);
   });
   
@@ -178,18 +244,18 @@ export async function getProducts(category = null) {
 
 /**
  * 获取单个产品（优先从静态数据查找，然后从 API）
+ * 支持通过slug或id查找（向后兼容）
  */
-export async function getProduct(id) {
-  // 加载静态产品数据
-  const staticProducts = await loadStaticProducts();
+export async function getProduct(identifier) {
+  // 加载所有产品（包括静态和API）
+  const allProducts = await getProducts();
   
-  // 如果是静态产品 ID
-  if (typeof id === 'string' && id.startsWith('static_')) {
-    const index = parseInt(id.replace('static_', ''));
-    if (staticProducts[index]) {
-      const product = normalizeProduct(staticProducts[index], index);
-      
-      // 为静态产品加载"所有产品"配置
+  // 使用slug工具函数查找产品
+  const product = findProductByIdentifier(allProducts, identifier);
+  
+  if (product) {
+    // 为静态产品加载"所有产品"配置
+    if (product._isStatic) {
       try {
         // 尝试获取配置（即使没有认证 token）
         const headers = {};
@@ -216,60 +282,22 @@ export async function getProduct(id) {
       } catch (error) {
         console.warn('Failed to load product config for static product:', error);
       }
-      
-      return product;
-    }
-  }
-  
-  // 尝试从静态产品中通过 title/name 匹配
-  const staticMatch = staticProducts.find((p, index) => {
-    const normalized = normalizeProduct(p, index);
-    return normalized.id === id || normalized.name === id || normalized.title === id;
-  });
-  
-  if (staticMatch) {
-    const index = staticProducts.indexOf(staticMatch);
-    const product = normalizeProduct(staticMatch, index);
-    
-    // 为静态产品加载"所有产品"配置
-    try {
-      // 尝试获取配置（即使没有认证 token）
-      const headers = {};
-      const token = getAuthToken();
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      headers['Content-Type'] = 'application/json';
-      
-      const configsResponse = await fetch(`${API_URL}/api/product-configs`, {
-        headers: headers,
-      });
-      if (configsResponse.ok) {
-        const allConfigs = await configsResponse.json();
-        const allProductsConfig = allConfigs.find(
-          config => config.product_id === -999 && 
-                   config.button_type === 'add_to_cart' && 
-                   (config.is_enabled === 1 || config.is_enabled === true)
-        );
-        if (allProductsConfig) {
-          product.buttonConfig = allProductsConfig;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load product config for static product:', error);
     }
     
     return product;
   }
   
-  // 从 API 获取
+  // 如果还是找不到，尝试从 API 获取（向后兼容）
   try {
-    const response = await fetch(`${API_URL}/api/products/${id}`);
+    const response = await fetch(`${API_URL}/api/products/${identifier}`);
     if (response.ok) {
       const product = await response.json();
       
-      // 后端已经在 getProductConfig 中处理了"所有产品"配置的回退
-      // 如果产品仍然没有配置，说明确实没有配置
+      // 如果API产品没有slug，生成一个
+      if (!product.slug) {
+        const title = product.title || product.name || 'Product';
+        product.slug = generateUniqueSlug(title, 0, new Map());
+      }
       
       return product;
     }

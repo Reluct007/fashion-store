@@ -5,6 +5,7 @@ import {
   Truck, RotateCcw, Shield, Check 
 } from 'lucide-react';
 import { getProduct, getProducts, recordClickStat } from '../lib/api';
+import { getProductUrlIdentifier } from '../lib/slug';
 import CountdownTimer from '../components/common/CountdownTimer';
 import SocialShare from '../components/common/SocialShare';
 import Navbar from '../components/common/Navbar';
@@ -594,8 +595,8 @@ export default function ProductDetail() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedProducts.map((item) => (
                   <Link
-                    key={item.id}
-                    to={`/product/${item.id}`}
+                    key={item.id || item.slug}
+                    to={`/product/${getProductUrlIdentifier(item)}`}
                     className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow"
                   >
                     <div className="relative">

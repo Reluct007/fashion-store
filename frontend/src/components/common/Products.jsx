@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { getProducts } from '../../lib/api';
+import { getProductUrlIdentifier } from '../../lib/slug';
 
 export default function Products({ data = {} }) {
   const [favorites, setFavorites] = useState(new Set());
@@ -116,79 +117,82 @@ export default function Products({ data = {} }) {
           <div className="text-center py-12 text-gray-600">No products available.</div>
         ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-              {/* Product Image */}
-              <div className="relative overflow-hidden">
-                <img 
-                  src={product.image} 
-                  alt={product.name}
-                  className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                {product.onSale && (
-                  <span className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    Sale
-                  </span>
-                )}
-                <button
-                  onClick={() => toggleFavorite(product.id)}
-                  className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors ${
-                    favorites.has(product.id) ? 'text-rose-600' : 'text-gray-400'
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ${favorites.has(product.id) ? 'fill-current' : ''}`} />
-                </button>
-              </div>
-
-              {/* Product Info */}
-              <div className="p-6">
-                <p className="text-sm text-gray-500 mb-2">{product.category}</p>
-                  <Link to={`/product/${product.id}`}>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-rose-600 transition-colors">
-                      {product.name}
-                    </h3>
-                  </Link>
-                
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.floor(product.rating)
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    {product.rating} ({product.reviews})
-                  </span>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl font-bold text-gray-900">${product.price}</span>
-                  {product.originalPrice && (
-                    <span className="text-lg text-gray-400 line-through">
-                      ${product.originalPrice}
+          {products.map((product) => {
+            const productIdentifier = getProductUrlIdentifier(product);
+            return (
+              <div key={product.id || product.slug || productIdentifier} className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+                {/* Product Image */}
+                <div className="relative overflow-hidden">
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {product.onSale && (
+                    <span className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      Sale
                     </span>
                   )}
+                  <button
+                    onClick={() => toggleFavorite(productIdentifier)}
+                    className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors ${
+                      favorites.has(productIdentifier) ? 'text-rose-600' : 'text-gray-400'
+                    }`}
+                  >
+                    <Heart className={`w-5 h-5 ${favorites.has(productIdentifier) ? 'fill-current' : ''}`} />
+                  </button>
                 </div>
 
-                {/* Add to Cart Button */}
-                <Link
-                  to={`/product/${product.id}`}
-                  className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-lg hover:bg-rose-700 transition-colors font-semibold"
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  View Details
-                </Link>
+                {/* Product Info */}
+                <div className="p-6">
+                  <p className="text-sm text-gray-500 mb-2">{product.category}</p>
+                    <Link to={`/product/${productIdentifier}`}>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-rose-600 transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
+                  
+                  {/* Rating */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(product.rating)
+                              ? 'text-yellow-400 fill-current'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-gray-600">
+                      {product.rating} ({product.reviews})
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl font-bold text-gray-900">${product.price}</span>
+                    {product.originalPrice && (
+                      <span className="text-lg text-gray-400 line-through">
+                        ${product.originalPrice}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Add to Cart Button */}
+                  <Link
+                    to={`/product/${productIdentifier}`}
+                    className="w-full flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-lg hover:bg-rose-700 transition-colors font-semibold"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    View Details
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         )}
 
