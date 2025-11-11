@@ -129,13 +129,16 @@ function mergeProducts(staticProductsList, apiProducts) {
   
   // 先添加静态产品（优先级更高）
   staticProductsList.forEach((product, index) => {
-    const title = product.title || product.name || 'Product';
+    const title = product.title || product.name || '';
     
     // 生成基础slug
-    let baseSlug = generateSlug(title);
+    let baseSlug = '';
+    if (title && title.trim()) {
+      baseSlug = generateSlug(title);
+    }
     
     // 如果slug为空，使用索引作为后备
-    if (!baseSlug) {
+    if (!baseSlug || baseSlug.trim() === '') {
       baseSlug = `product-${index}`;
     }
     
@@ -156,20 +159,26 @@ function mergeProducts(staticProductsList, apiProducts) {
     merged.push(normalized);
     
     // 如果 API 中有同名产品，移除它（静态数据优先）
-    const key = title.toLowerCase().trim();
-    if (key) {
-      apiProductMap.delete(key);
+    if (title && title.trim()) {
+      const key = title.toLowerCase().trim();
+      if (key) {
+        apiProductMap.delete(key);
+      }
     }
   });
   
   // 添加剩余的 API 产品，为它们生成slug（如果还没有）
   apiProductMap.forEach((product) => {
     if (!product.slug) {
-      const title = product.title || product.name || 'Product';
-      let baseSlug = generateSlug(title);
+      const title = product.title || product.name || '';
+      let baseSlug = '';
+      
+      if (title && title.trim()) {
+        baseSlug = generateSlug(title);
+      }
       
       // 如果slug为空，使用索引作为后备
-      if (!baseSlug) {
+      if (!baseSlug || baseSlug.trim() === '') {
         baseSlug = `product-${merged.length}`;
       }
       
