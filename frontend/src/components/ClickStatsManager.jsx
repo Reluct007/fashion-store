@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClickStats, getClickStatsDetail } from '../lib/api';
+import { getClickStats, getClickStatsDetail, getProducts } from '../lib/api';
 import { BarChart3, Calendar, Filter, ExternalLink } from 'lucide-react';
 
 export default function ClickStatsManager() {
@@ -15,10 +15,27 @@ export default function ClickStatsManager() {
     end_date: ''
   });
   const [selectedUrl, setSelectedUrl] = useState(null);
+  const [productMap, setProductMap] = useState(new Map()); // id -> {name, slug}
 
   useEffect(() => {
     loadStats();
   }, [filters, viewMode]);
+
+  useEffect(() => {
+    // 预加载产品映射，便于在统计中显示更友好的页面名称
+    (async () => {
+      try {
+        const products = await getProducts();
+        const map = new Map();
+        products.forEach(p => {
+          map.set(p.id, { name: p.title || p.name || '', slug: p.slug || '' });
+        });
+        setProductMap(map);
+      } catch (e) {
+        // 静默失败，不影响统计加载
+      }
+    })();
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -51,7 +68,13 @@ export default function ClickStatsManager() {
 
   const getPageTypeLabel = (pageType, pageId, pagePath) => {
     if (pageType === 'home') return 'Home Page';
-    if (pageType === 'product') return `Product #${pageId}`;
+    if (pageType === 'product') {
+      const info = productMap.get(pageId);
+      if (info && (info.name || info.slug)) {
+        return info.name || info.slug;
+      }
+      return `Product ${pageId}`;
+    }
     if (pageType === 'page') return pagePath || 'Custom Page';
     if (pageType === 'list') return 'List Page';
     return pageType || 'Unknown';
