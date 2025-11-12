@@ -197,11 +197,18 @@ export async function upsertProductConfig(env, config) {
   }
 
   try {
-    // 检查是否有 page_path 列（向后兼容）
+    // 检查是否有 page_path、link_target 列（向后兼容）
     let hasPagePath = false;
+    let hasLinkTarget = false;
     try {
       await env.DB.prepare('SELECT page_path FROM product_configs LIMIT 1').first();
       hasPagePath = true;
+    } catch {
+      // 如果列不存在，稍后添加
+    }
+    try {
+      await env.DB.prepare('SELECT link_target FROM product_configs LIMIT 1').first();
+      hasLinkTarget = true;
     } catch {
       // 如果列不存在，稍后添加
     }
@@ -216,11 +223,42 @@ export async function upsertProductConfig(env, config) {
         console.log('Could not add page_path column:', e.message);
       }
     }
+    // 如果没有 link_target 列，尝试添加
+    if (!hasLinkTarget) {
+      try {
+        await env.DB.prepare("ALTER TABLE product_configs ADD COLUMN link_target TEXT DEFAULT '_blank'").run();
+        hasLinkTarget = true;
+      } catch (e) {
+        console.log('Could not add link_target column:', e.message);
+      }
+    }
     
     // 准备 SQL 和参数
     let sql, params;
     
-    if (hasPagePath) {
+    if (hasPagePath && hasLinkTarget) {
+      sql = `INSERT INTO product_configs (product_id, button_type, action_type, target_url, link_target, api_endpoint, page_path, is_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(product_id, button_type) 
+             DO UPDATE SET 
+               action_type = excluded.action_type,
+               target_url = excluded.target_url,
+               link_target = excluded.link_target,
+               api_endpoint = excluded.api_endpoint,
+               page_path = excluded.page_path,
+               is_enabled = excluded.is_enabled,
+               updated_at = CURRENT_TIMESTAMP`;
+      params = [
+        config.product_id,
+        config.button_type,
+        config.action_type,
+        config.target_url || null,
+        config.link_target || '_blank',
+        config.api_endpoint || null,
+        config.page_path || null,
+        config.is_enabled !== undefined ? (config.is_enabled ? 1 : 0) : 1
+      ];
+    } else if (hasPagePath && !hasLinkTarget) {
       sql = `INSERT INTO product_configs (product_id, button_type, action_type, target_url, api_endpoint, page_path, is_enabled)
              VALUES (?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(product_id, button_type) 

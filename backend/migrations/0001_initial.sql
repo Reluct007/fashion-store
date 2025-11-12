@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS product_configs (
   button_type TEXT NOT NULL, -- 'add_to_cart', 'buy_now', etc.
   action_type TEXT NOT NULL, -- 'link', 'api', 'modal'
   target_url TEXT,
+  link_target TEXT DEFAULT '_blank',
   api_endpoint TEXT,
   is_enabled BOOLEAN DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

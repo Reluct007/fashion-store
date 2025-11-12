@@ -114,7 +114,12 @@ export default function ProductDetail() {
         console.error('Failed to record click stat:', err);
       }
       
-      window.open(buttonConfig.target_url, buttonConfig.target_url.startsWith('http') ? '_blank' : '_self');
+      window.open(
+        buttonConfig.target_url,
+        (buttonConfig.link_target && (buttonConfig.link_target === '_blank' || buttonConfig.link_target === '_self'))
+          ? buttonConfig.link_target
+          : (buttonConfig.target_url.startsWith('http') ? '_blank' : '_self')
+      );
       return;
     }
     

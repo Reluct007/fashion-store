@@ -15,6 +15,7 @@ export default function ProductConfigManager() {
     button_type: 'add_to_cart',
     action_type: 'link',
     target_url: '',
+    link_target: '_blank',
     api_endpoint: '',
     is_enabled: true,
   });
@@ -67,6 +68,7 @@ export default function ProductConfigManager() {
         ...formData,
         product_id: productId,
         page_path: formData.page_type === 'page' ? formData.page_path : null,
+        link_target: formData.link_target || '_blank',
       };
       
       await upsertProductConfig(configData);
@@ -117,6 +119,7 @@ export default function ProductConfigManager() {
       button_type: config.button_type,
       action_type: config.action_type,
       target_url: config.target_url || '',
+      link_target: config.link_target || '_blank',
       api_endpoint: config.api_endpoint || '',
       is_enabled: config.is_enabled === 1 || config.is_enabled === true,
     });
@@ -273,6 +276,20 @@ export default function ProductConfigManager() {
                 />
               </div>
             )}
+          {formData.action_type === 'link' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Open In</label>
+              <select
+                value={formData.link_target}
+                onChange={(e) => setFormData({ ...formData, link_target: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500"
+              >
+                <option value="_blank">New Tab (_blank)</option>
+                <option value="_self">Current Tab (_self)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Default is New Tab.</p>
+            </div>
+          )}
             {formData.action_type === 'api' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">API Endpoint</label>
@@ -360,7 +377,7 @@ export default function ProductConfigManager() {
                       {config.action_type === 'link' ? (
                         <a
                           href={config.target_url}
-                          target="_blank"
+                          target={config.link_target || '_blank'}
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 text-rose-600 hover:underline"
                         >
