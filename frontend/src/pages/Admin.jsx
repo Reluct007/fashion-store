@@ -434,16 +434,16 @@ export default function Admin() {
             )}
 
             {/* Products List */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-x-auto">
               {loading ? (
                 <div className="p-8 text-center text-gray-600">Loading products...</div>
               ) : products.length === 0 ? (
                 <div className="p-8 text-center text-gray-600">No products found. Add your first product!</div>
               ) : (
-              <table className="w-full">
+              <table className="w-full min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[300px]">Product</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -452,43 +452,54 @@ export default function Admin() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
-                    <tr key={product.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img src={product.image} alt={product.name} className="w-12 h-12 rounded-lg object-cover mr-4" />
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            <div className="text-sm text-gray-500">{product.description}</div>
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-start">
+                          <img 
+                            src={product.image || '/placeholder-image.png'} 
+                            alt={product.name} 
+                            className="w-16 h-16 rounded-lg object-cover mr-4 flex-shrink-0" 
+                            onError={(e) => {
+                              e.target.src = '/placeholder-image.png';
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1 break-words">{product.name || 'Unnamed Product'}</div>
+                            <div className="text-sm text-gray-500 line-clamp-2 break-words">{product.description || 'No description'}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">${product.price}</div>
-                        {product.originalPrice && (
+                      <td className="px-6 py-4 text-sm text-gray-500">{product.category || 'Uncategorized'}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">${product.price || 0}</div>
+                        {product.originalPrice && product.originalPrice > 0 && (
                           <div className="text-sm text-gray-500 line-through">${product.originalPrice}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         {product.onSale ? (
                           <span className="px-2 py-1 text-xs font-semibold bg-rose-100 text-rose-800 rounded-full">On Sale</span>
                         ) : (
                           <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Active</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="text-rose-600 hover:text-rose-900 mr-4"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                      <td className="px-6 py-4 text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="text-rose-600 hover:text-rose-900 p-1"
+                            title="Edit"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
