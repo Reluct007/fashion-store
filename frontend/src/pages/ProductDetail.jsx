@@ -417,17 +417,14 @@ export default function ProductDetail() {
                   </label>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => {
-                      // 简化可用性检查：默认所有颜色都可用，除非有库存信息且明确显示为0
+                      // 可用性检查：默认所有颜色都可用
+                      // 只有在选择了尺寸且该尺寸下该颜色库存明确为0时，才标记为不可用
                       let isAvailable = true;
-                      if (product.stock && selectedSize && product.stock[selectedSize]) {
-                        // 如果选择了尺寸，检查该尺寸下该颜色的库存
+                      if (product.stock && selectedSize && product.stock[selectedSize] && product.stock[selectedSize][color.name] !== undefined) {
+                        // 只有在明确知道该尺寸下该颜色的库存为0时，才标记为不可用
                         isAvailable = (product.stock[selectedSize][color.name] || 0) > 0;
-                      } else if (product.stock && product.sizes && product.sizes.length > 0) {
-                        // 如果没有选择尺寸，检查是否有任何尺寸有该颜色的库存
-                        isAvailable = product.sizes.some(size => 
-                          product.stock[size] && (product.stock[size][color.name] || 0) > 0
-                        );
                       }
+                      // 如果没有选择尺寸，或者没有库存信息，或者库存信息中没有该颜色，默认可用
                       
                       const isSelected = selectedColor === color.name;
                       const hasColorImage = color.image && color.image.trim() !== '';
