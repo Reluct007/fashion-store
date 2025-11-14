@@ -417,19 +417,18 @@ export default function ProductDetail() {
                   </label>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => {
-                      // 简化可用性检查：如果没有库存信息，默认可用
-                      // 只有在有库存信息且明确显示为0时才不可用
-                      const hasStock = product.stock && 
-                        (selectedSize && product.stock[selectedSize] || 
-                         product.sizes && product.sizes.length > 0);
-                      const isAvailable = !hasStock || 
-                        (selectedSize && product.stock[selectedSize]
-                          ? (product.stock[selectedSize][color.name] || 0) > 0
-                          : product.sizes && product.sizes.length > 0
-                            ? product.sizes.some(size => 
-                                product.stock[size] && (product.stock[size][color.name] || 0) > 0
-                              )
-                            : true);
+                      // 简化可用性检查：默认所有颜色都可用，除非有库存信息且明确显示为0
+                      let isAvailable = true;
+                      if (product.stock && selectedSize && product.stock[selectedSize]) {
+                        // 如果选择了尺寸，检查该尺寸下该颜色的库存
+                        isAvailable = (product.stock[selectedSize][color.name] || 0) > 0;
+                      } else if (product.stock && product.sizes && product.sizes.length > 0) {
+                        // 如果没有选择尺寸，检查是否有任何尺寸有该颜色的库存
+                        isAvailable = product.sizes.some(size => 
+                          product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                        );
+                      }
+                      
                       const isSelected = selectedColor === color.name;
                       const hasColorImage = color.image && color.image.trim() !== '';
                       
@@ -466,7 +465,8 @@ export default function ProductDetail() {
                               <img
                                 src={color.image}
                                 alt={color.name}
-                                className="w-full h-full object-cover pointer-events-none"
+                                className="w-full h-full object-cover pointer-events-none select-none"
+                                draggable="false"
                                 onError={(e) => {
                                   // 如果图片加载失败，回退到颜色代码
                                   e.target.style.display = 'none';
@@ -477,16 +477,16 @@ export default function ProductDetail() {
                               />
                               {isSelected && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-                                  <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                                  <Check className="w-6 h-6 text-white drop-shadow-lg pointer-events-none" />
                                 </div>
                               )}
                             </>
                           ) : (
                             <>
-                              <div className="w-full h-full pointer-events-none" style={{ backgroundColor: color.code }} />
+                              <div className="w-full h-full pointer-events-none select-none" style={{ backgroundColor: color.code }} />
                               {isSelected && (
                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <Check className="w-6 h-6 text-white drop-shadow-lg" />
+                                  <Check className="w-6 h-6 text-white drop-shadow-lg pointer-events-none" />
                                 </div>
                               )}
                             </>
