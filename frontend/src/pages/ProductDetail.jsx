@@ -10,6 +10,7 @@ import CountdownTimer from '../components/common/CountdownTimer';
 import SocialShare from '../components/common/SocialShare';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -182,8 +183,27 @@ export default function ProductDetail() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  // 生成 canonical URL
+  const getCanonicalUrl = () => {
+    if (!product) return '';
+    const productIdentifier = getProductUrlIdentifier(product);
+    const baseUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.host}`
+      : '';
+    return `${baseUrl}/product/${productIdentifier}`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      {product && (
+        <SEO
+          title={`${product.name} - Fashion Store`}
+          description={product.description || `${product.name} - Shop now at Fashion Store`}
+          canonical={getCanonicalUrl()}
+          ogImage={product.image || (product.images && product.images[0])}
+          ogType="product"
+        />
+      )}
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
@@ -352,27 +372,27 @@ export default function ProductDetail() {
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => {
-                      // 如果已选择颜色，检查该尺码和颜色的库存
-                      const isAvailable = selectedColor && product.stock && product.stock[size]
-                        ? (product.stock[size][selectedColor] || 0) > 0
-                        : product.colors && product.colors.length > 0
-                        ? product.colors.some(color => 
-                            product.stock && product.stock[size] && (product.stock[size][color.name] || 0) > 0
-                          )
-                        : true;
+                      // 简化可用性检查：如果没有库存信息，默认可用
+                      const isAvailable = !product.stock || !product.stock[size] || 
+                        (selectedColor 
+                          ? (product.stock[size][selectedColor] || 0) > 0
+                          : product.colors && product.colors.length > 0
+                            ? product.colors.some(color => 
+                                product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                              )
+                            : true);
                       const isSelected = selectedSize === size;
                       return (
                         <button
                           key={size}
+                          type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (isAvailable) {
-                              setSelectedSize(size);
-                            }
+                            setSelectedSize(size);
                           }}
                           disabled={!isAvailable}
-                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
+                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors cursor-pointer ${
                             isSelected
                               ? 'border-rose-600 bg-rose-50 text-rose-600'
                               : isAvailable
@@ -396,38 +416,38 @@ export default function ProductDetail() {
                   </label>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => {
-                      // 如果已选择尺码，检查该尺码和颜色的库存
-                      const isAvailable = selectedSize && product.stock && product.stock[selectedSize]
-                        ? (product.stock[selectedSize][color.name] || 0) > 0
-                        : product.sizes && product.sizes.length > 0
-                        ? product.sizes.some(size => 
-                            product.stock && product.stock[size] && (product.stock[size][color.name] || 0) > 0
-                          )
-                        : true;
+                      // 简化可用性检查：如果没有库存信息，默认可用
+                      const isAvailable = !product.stock || 
+                        (selectedSize && product.stock[selectedSize]
+                          ? (product.stock[selectedSize][color.name] || 0) > 0
+                          : product.sizes && product.sizes.length > 0
+                            ? product.sizes.some(size => 
+                                product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                              )
+                            : true);
                       const isSelected = selectedColor === color.name;
                       const hasColorImage = color.image && color.image.trim() !== '';
                       
                       return (
                         <button
                           key={color.name}
+                          type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            if (isAvailable) {
-                              setSelectedColor(color.name);
-                              // 如果选择了颜色，切换主图片到该颜色的图片
-                              if (color.image) {
-                                setDisplayImage(color.image);
-                                // 如果该颜色图片在主图片列表中，也更新selectedImage索引
-                                const imageIndex = product.images?.findIndex(img => img === color.image);
-                                if (imageIndex >= 0) {
-                                  setSelectedImage(imageIndex);
-                                }
+                            setSelectedColor(color.name);
+                            // 如果选择了颜色，切换主图片到该颜色的图片
+                            if (color.image) {
+                              setDisplayImage(color.image);
+                              // 如果该颜色图片在主图片列表中，也更新selectedImage索引
+                              const imageIndex = product.images?.findIndex(img => img === color.image);
+                              if (imageIndex >= 0) {
+                                setSelectedImage(imageIndex);
                               }
                             }
                           }}
                           disabled={!isAvailable}
-                          className={`relative rounded-lg border-2 transition-all overflow-hidden ${
+                          className={`relative rounded-lg border-2 transition-all overflow-hidden cursor-pointer ${
                             isSelected
                               ? 'border-rose-600 ring-2 ring-rose-200 scale-110'
                               : isAvailable

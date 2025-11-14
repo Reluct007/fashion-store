@@ -5,6 +5,7 @@ import { getProducts } from '../lib/api';
 import { getProductUrlIdentifier } from '../lib/slug';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -75,8 +76,21 @@ export default function Products() {
     );
   }
 
+  const getCanonicalUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.host}/products`;
+    }
+    return '';
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="All Products - Fashion Store"
+        description="Browse our complete collection of fashion products. Find the perfect style for you."
+        canonical={getCanonicalUrl()}
+        ogType="website"
+      />
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">

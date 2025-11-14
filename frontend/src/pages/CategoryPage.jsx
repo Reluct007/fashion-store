@@ -5,6 +5,7 @@ import { getProducts } from '../lib/api';
 import { getProductUrlIdentifier } from '../lib/slug';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 
 export default function CategoryPage() {
   const { category: paramCategory } = useParams();
@@ -188,8 +189,29 @@ export default function CategoryPage() {
     );
   }
 
+  const getCanonicalUrl = () => {
+    if (typeof window !== 'undefined' && category) {
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      // 使用当前路径，但去除查询参数和 hash
+      const path = window.location.pathname;
+      return `${baseUrl}${path}`;
+    }
+    return '';
+  };
+
+  const getPageDescription = () => {
+    const categoryName = getPageTitle();
+    return `Browse our ${categoryName} collection. Find the perfect ${categoryName.toLowerCase()} pieces for your style.`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title={`${getPageTitle()} - Fashion Store`}
+        description={getPageDescription()}
+        canonical={getCanonicalUrl()}
+        ogType="website"
+      />
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-8">
