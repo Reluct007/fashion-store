@@ -56,24 +56,29 @@ function resetSlugMapCache() {
 function normalizeProduct(product, index, slugMap = null) {
   // 处理不同的数据格式（支持originalprice/sellingprice和originalPrice/price）
   const title = product.title || product.name || 'Product';
+  
   // 优先使用 sellingprice，然后是 price，确保转换为数字
   // 注意：sellingprice 优先，即使 price 存在也要优先使用 sellingprice
   let price = 0;
+  // 明确检查 sellingprice 字段（小写）
   if (product.sellingprice !== undefined && product.sellingprice !== null && product.sellingprice !== '') {
     const sellingPriceNum = Number(product.sellingprice);
-    if (!isNaN(sellingPriceNum)) {
+    if (!isNaN(sellingPriceNum) && sellingPriceNum >= 0) {
       price = sellingPriceNum;
     }
-  } else if (product.price !== undefined && product.price !== null && product.price !== '') {
+  } 
+  // 只有在 sellingprice 不存在或无效时才使用 price
+  else if (product.price !== undefined && product.price !== null && product.price !== '' && price === 0) {
     const priceNum = Number(product.price);
-    if (!isNaN(priceNum)) {
+    if (!isNaN(priceNum) && priceNum >= 0) {
       price = priceNum;
     }
   }
   
   // 处理 originalPrice：如果 originalprice 为 0 或空字符串，则返回 null
-  const originalPriceValue = product.originalPrice || product.originalprice;
-  const originalPrice = (originalPriceValue && originalPriceValue !== '' && originalPriceValue !== '0' && Number(originalPriceValue) > 0) 
+  // 明确检查 originalprice 字段（小写）
+  const originalPriceValue = product.originalprice !== undefined ? product.originalprice : (product.originalPrice !== undefined ? product.originalPrice : null);
+  const originalPrice = (originalPriceValue !== null && originalPriceValue !== undefined && originalPriceValue !== '' && originalPriceValue !== '0' && Number(originalPriceValue) > 0) 
     ? Number(originalPriceValue) 
     : null;
   
@@ -173,6 +178,17 @@ function mergeProducts(staticProductsList, apiProducts) {
     const normalized = normalizeProduct(product, index, null);
     normalized.slug = finalSlug; // 使用最终确定的slug
     slugMap.set(finalSlug, normalized);
+    
+    // 调试：确保价格没有被反转
+    if (normalized.price === 0 && normalized.originalPrice && normalized.originalPrice > 0) {
+      console.warn(`Warning: Product "${normalized.name}" has price=0 but originalPrice=${normalized.originalPrice}. This might indicate data is reversed.`);
+      // 如果价格是0但原价存在，可能是数据被反转了，尝试修复
+      if (normalized.originalPrice > 0) {
+        const tempPrice = normalized.price;
+        normalized.price = normalized.originalPrice;
+        normalized.originalPrice = tempPrice > 0 ? tempPrice : null;
+      }
+    }
     
     merged.push(normalized);
     
