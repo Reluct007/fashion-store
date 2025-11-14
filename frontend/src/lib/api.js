@@ -56,8 +56,13 @@ function resetSlugMapCache() {
 function normalizeProduct(product, index, slugMap = null) {
   // 处理不同的数据格式（支持originalprice/sellingprice和originalPrice/price）
   const title = product.title || product.name || 'Product';
-  const price = product.price || product.sellingprice || 0;
-  const originalPrice = product.originalPrice || product.originalprice || null;
+  // 优先使用 sellingprice，然后是 price
+  const price = product.sellingprice || product.price || 0;
+  // 处理 originalPrice：如果 originalprice 为 0 或空字符串，则返回 null
+  const originalPriceValue = product.originalPrice || product.originalprice;
+  const originalPrice = (originalPriceValue && originalPriceValue !== '' && Number(originalPriceValue) > 0) 
+    ? Number(originalPriceValue) 
+    : null;
   
   // 处理sizes和colors（可能是字符串格式的JSON）
   let sizes = product.sizes || [];

@@ -292,7 +292,7 @@ export default function CategoryPage() {
                         <span className="text-xl font-bold text-gray-900">
                           ${productPrice.toFixed(2)}
                         </span>
-                        {productOriginalPrice && productOriginalPrice > productPrice && (
+                        {productOriginalPrice && productOriginalPrice > 0 && productOriginalPrice > productPrice && (
                           <span className="text-sm text-gray-400 line-through">
                             ${productOriginalPrice.toFixed(2)}
                           </span>

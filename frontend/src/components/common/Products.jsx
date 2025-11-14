@@ -176,7 +176,7 @@ export default function Products({ data = {} }) {
                   {/* Price */}
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-2xl font-bold text-gray-900">${product.price}</span>
-                    {product.originalPrice && (
+                    {product.originalPrice && product.originalPrice > 0 && (
                       <span className="text-lg text-gray-400 line-through">
                         ${product.originalPrice}
                       </span>

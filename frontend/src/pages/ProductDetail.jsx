@@ -326,7 +326,7 @@ export default function ProductDetail() {
                   <span className="text-4xl font-bold text-gray-900">
                     ${product.price}
                   </span>
-                  {product.originalPrice && (
+                  {product.originalPrice && product.originalPrice > 0 && (
                     <span className="text-2xl text-gray-400 line-through">
                       ${product.originalPrice}
                     </span>
@@ -622,7 +622,7 @@ export default function ProductDetail() {
                       <h3 className="font-semibold text-gray-900 mb-2">{item.name}</h3>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-gray-900">${item.price}</span>
-                        {item.originalPrice && (
+                        {item.originalPrice && item.originalPrice > 0 && (
                           <span className="text-sm text-gray-400 line-through">
                             ${item.originalPrice}
                           </span>
