@@ -267,7 +267,7 @@ export default function CategoryPage() {
                       </Link>
 
                       {/* Rating */}
-                      {productRating > 0 && (
+                      {productRating > 0 && productReviews > 0 && (
                         <div className="flex items-center gap-2 mb-3">
                           <div className="flex items-center">
                             {[...Array(5)].map((_, i) => (
