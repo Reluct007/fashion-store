@@ -268,7 +268,7 @@ export default function ProductDetail() {
                   </div>
                 ) : null}
                 {/* 促销标签 */}
-                {product.onSale && (
+                {(product.onSale === true || product.onSale === 1) && (
                   <div className="absolute top-4 left-4">
                     <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-lg">
                       SALE
@@ -337,7 +337,7 @@ export default function ProductDetail() {
                     </span>
                   )}
                 </div>
-                {product.onSale && (
+                {(product.onSale === true || product.onSale === 1) && (
                   <div className="mt-4">
                     <CountdownTimer endDate={saleEndDate} />
                   </div>

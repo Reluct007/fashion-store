@@ -129,7 +129,7 @@ export default function Products() {
                           }}
                         />
                       </Link>
-                      {isOnSale && (
+                      {(isOnSale === true || isOnSale === 1) && (
                         <span className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
                           Sale
                         </span>
