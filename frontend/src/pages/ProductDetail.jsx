@@ -315,7 +315,7 @@ export default function ProductDetail() {
                     ))}
                   </div>
                   <span className="text-gray-600">
-                    {product.rating} ({product.reviews} reviews)
+                    {product.rating} ({product.reviews} {product.reviews === 1 ? 'review' : 'reviews'})
                   </span>
                 </div>
               )}
