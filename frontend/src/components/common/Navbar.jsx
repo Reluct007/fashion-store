@@ -61,12 +61,17 @@ export default function Navbar({ data = {} }) {
                   Categories
                 </button>
                 {isDropdownOpen.categories && (
-                  <div className="absolute left-0 mt-2 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64">
+                  <div 
+                    className="absolute left-0 top-full mt-1 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64 z-50"
+                    onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, categories: true })}
+                    onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, categories: false })}
+                  >
                     {navbarData.categories.map((item, idx) => (
                       <Link 
                         key={idx} 
                         to={item.href} 
-                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors"
+                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors py-1 cursor-pointer"
+                        onClick={() => setIsDropdownOpen({ ...isDropdownOpen, categories: false })}
                       >
                         {item.label}
                       </Link>
@@ -85,12 +90,17 @@ export default function Navbar({ data = {} }) {
                   Collections
                 </button>
                 {isDropdownOpen.collections && (
-                  <div className="absolute left-0 mt-2 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64">
+                  <div 
+                    className="absolute left-0 top-full mt-1 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64 z-50"
+                    onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, collections: true })}
+                    onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, collections: false })}
+                  >
                     {navbarData.collections.map((item, idx) => (
                       <Link 
                         key={idx} 
                         to={item.href} 
-                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors"
+                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors py-1 cursor-pointer"
+                        onClick={() => setIsDropdownOpen({ ...isDropdownOpen, collections: false })}
                       >
                         {item.label}
                       </Link>
