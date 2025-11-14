@@ -29,14 +29,30 @@ export default function SEO({
 
     const baseUrl = getBaseUrl();
     
-    // 处理 canonical URL
+    // 处理 canonical URL - 符合 Google SEO 标准
     let canonicalUrl = canonical;
     if (!canonicalUrl && typeof window !== 'undefined') {
       // 如果没有提供 canonical，使用当前页面的 URL（去除查询参数和 hash）
-      canonicalUrl = window.location.href.split('?')[0].split('#')[0];
-    } else if (canonicalUrl && !canonicalUrl.startsWith('http')) {
-      // 如果是相对路径，转换为绝对路径
-      canonicalUrl = `${baseUrl}${canonicalUrl.startsWith('/') ? '' : '/'}${canonicalUrl}`;
+      const url = new URL(window.location.href);
+      url.search = ''; // 移除查询参数
+      url.hash = ''; // 移除 hash
+      canonicalUrl = url.toString();
+    } else if (canonicalUrl) {
+      // 确保 canonical URL 是绝对 URL
+      if (!canonicalUrl.startsWith('http')) {
+        // 如果是相对路径，转换为绝对路径
+        canonicalUrl = `${baseUrl}${canonicalUrl.startsWith('/') ? '' : '/'}${canonicalUrl}`;
+      }
+      // 移除查询参数和 hash（如果存在）
+      try {
+        const url = new URL(canonicalUrl);
+        url.search = '';
+        url.hash = '';
+        canonicalUrl = url.toString();
+      } catch (e) {
+        // 如果 URL 解析失败，使用原始值
+        canonicalUrl = canonicalUrl.split('?')[0].split('#')[0];
+      }
     }
 
     // 移除旧的 canonical 标签

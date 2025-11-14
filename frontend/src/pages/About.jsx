@@ -1,10 +1,24 @@
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 import { ShoppingBag, Heart, Award, Users } from 'lucide-react';
 
 export default function About() {
+  const getCanonicalUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.host}/about`;
+    }
+    return '';
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="About Us - Fashion Store"
+        description="Learn about Fashion Store's mission, values, and story. We're committed to providing high-quality, stylish clothing that allows our customers to express their unique personalities."
+        canonical={getCanonicalUrl()}
+        ogType="website"
+      />
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-12">

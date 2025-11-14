@@ -1,11 +1,19 @@
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 
 export default function StaticPage() {
   const location = useLocation();
   // 从路径中提取页面名称（例如 /careers -> careers）
   const page = location.pathname.split('/').filter(Boolean)[0] || '';
+  
+  const getCanonicalUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.host}${location.pathname}`;
+    }
+    return '';
+  };
   
   // 页面内容配置
   const pageContent = {
@@ -205,8 +213,30 @@ export default function StaticPage() {
     content: '<p class="text-gray-600">The page you are looking for does not exist.</p>'
   };
 
+  // 为每个页面生成 SEO 描述
+  const getPageDescription = () => {
+    const descriptions = {
+      careers: 'Join the Fashion Store team. We\'re always looking for talented individuals passionate about fashion.',
+      blog: 'Read the latest fashion trends, style tips, and fashion inspiration on the Fashion Store blog.',
+      shipping: 'Learn about Fashion Store\'s shipping policy, rates, and delivery options. Free shipping available on orders over $50.',
+      returns: 'Fashion Store return policy. Easy returns and exchanges within 30 days. Learn how to return your items.',
+      'size-guide': 'Fashion Store size guide. Find the perfect fit with our comprehensive sizing information and measurement guide.',
+      faq: 'Frequently asked questions about Fashion Store. Find answers to common questions about orders, shipping, returns, and more.',
+      privacy: 'Fashion Store privacy policy. Learn how we collect, use, and protect your personal information.',
+      terms: 'Fashion Store terms of service. Read our terms and conditions for using our website and services.',
+      cookies: 'Fashion Store cookie policy. Learn how we use cookies and similar technologies on our website.'
+    };
+    return descriptions[page] || `${currentPage.title} - Fashion Store`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title={`${currentPage.title} - Fashion Store`}
+        description={getPageDescription()}
+        canonical={getCanonicalUrl()}
+        ogType="website"
+      />
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-12">

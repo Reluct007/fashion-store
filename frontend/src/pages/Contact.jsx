@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
+import SEO from '../components/common/SEO';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 
 export default function Contact() {
+  const getCanonicalUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.host}/contact`;
+    }
+    return '';
+  };
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,6 +39,12 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO
+        title="Contact Us - Fashion Store"
+        description="Get in touch with Fashion Store. We're here to help with any questions or feedback. Contact us via email, phone, or fill out our contact form."
+        canonical={getCanonicalUrl()}
+        ogType="website"
+      />
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-12">

@@ -373,7 +373,9 @@ export default function ProductDetail() {
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => {
                       // 简化可用性检查：如果没有库存信息，默认可用
-                      const isAvailable = !product.stock || !product.stock[size] || 
+                      // 只有在有库存信息且明确显示为0时才不可用
+                      const hasStock = product.stock && product.stock[size];
+                      const isAvailable = !hasStock || 
                         (selectedColor 
                           ? (product.stock[size][selectedColor] || 0) > 0
                           : product.colors && product.colors.length > 0
@@ -391,12 +393,11 @@ export default function ProductDetail() {
                             e.stopPropagation();
                             setSelectedSize(size);
                           }}
-                          disabled={!isAvailable}
-                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors cursor-pointer ${
+                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
                             isSelected
-                              ? 'border-rose-600 bg-rose-50 text-rose-600'
+                              ? 'border-rose-600 bg-rose-50 text-rose-600 cursor-pointer'
                               : isAvailable
-                              ? 'border-gray-300 hover:border-rose-300 text-gray-700'
+                              ? 'border-gray-300 hover:border-rose-300 text-gray-700 cursor-pointer'
                               : 'border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
                           }`}
                         >
@@ -417,7 +418,11 @@ export default function ProductDetail() {
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => {
                       // 简化可用性检查：如果没有库存信息，默认可用
-                      const isAvailable = !product.stock || 
+                      // 只有在有库存信息且明确显示为0时才不可用
+                      const hasStock = product.stock && 
+                        (selectedSize && product.stock[selectedSize] || 
+                         product.sizes && product.sizes.length > 0);
+                      const isAvailable = !hasStock || 
                         (selectedSize && product.stock[selectedSize]
                           ? (product.stock[selectedSize][color.name] || 0) > 0
                           : product.sizes && product.sizes.length > 0
@@ -446,12 +451,11 @@ export default function ProductDetail() {
                               }
                             }
                           }}
-                          disabled={!isAvailable}
-                          className={`relative rounded-lg border-2 transition-all overflow-hidden cursor-pointer ${
+                          className={`relative rounded-lg border-2 transition-all overflow-hidden ${
                             isSelected
-                              ? 'border-rose-600 ring-2 ring-rose-200 scale-110'
+                              ? 'border-rose-600 ring-2 ring-rose-200 scale-110 cursor-pointer'
                               : isAvailable
-                              ? 'border-gray-300 hover:border-rose-300'
+                              ? 'border-gray-300 hover:border-rose-300 cursor-pointer'
                               : 'border-gray-200 opacity-50 cursor-not-allowed'
                           } ${hasColorImage ? 'w-16 h-16' : 'w-12 h-12 rounded-full'}`}
                           style={!hasColorImage ? { backgroundColor: color.code } : {}}
