@@ -300,23 +300,25 @@ export default function ProductDetail() {
               </h1>
               
               {/* Rating */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < Math.floor(product.rating || 0)
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
+              {Number(product.rating) > 0 && Number(product.reviews) > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < Math.floor(product.rating || 0)
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-gray-600">
+                    {product.rating} ({product.reviews} reviews)
+                  </span>
                 </div>
-                <span className="text-gray-600">
-                  {product.rating || 0} ({product.reviews || 0} reviews)
-                </span>
-              </div>
+              )}
 
               {/* Price */}
               <div className="mb-6">
