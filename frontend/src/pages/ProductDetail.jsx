@@ -364,7 +364,13 @@ export default function ProductDetail() {
                       return (
                         <button
                           key={size}
-                          onClick={() => setSelectedSize(size)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (isAvailable) {
+                              setSelectedSize(size);
+                            }
+                          }}
                           disabled={!isAvailable}
                           className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
                             isSelected
@@ -404,15 +410,19 @@ export default function ProductDetail() {
                       return (
                         <button
                           key={color.name}
-                          onClick={() => {
-                            setSelectedColor(color.name);
-                            // 如果选择了颜色，切换主图片到该颜色的图片
-                            if (color.image) {
-                              setDisplayImage(color.image);
-                              // 如果该颜色图片在主图片列表中，也更新selectedImage索引
-                              const imageIndex = product.images?.findIndex(img => img === color.image);
-                              if (imageIndex >= 0) {
-                                setSelectedImage(imageIndex);
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (isAvailable) {
+                              setSelectedColor(color.name);
+                              // 如果选择了颜色，切换主图片到该颜色的图片
+                              if (color.image) {
+                                setDisplayImage(color.image);
+                                // 如果该颜色图片在主图片列表中，也更新selectedImage索引
+                                const imageIndex = product.images?.findIndex(img => img === color.image);
+                                if (imageIndex >= 0) {
+                                  setSelectedImage(imageIndex);
+                                }
                               }
                             }
                           }}
@@ -432,7 +442,7 @@ export default function ProductDetail() {
                               <img
                                 src={color.image}
                                 alt={color.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover pointer-events-none"
                                 onError={(e) => {
                                   // 如果图片加载失败，回退到颜色代码
                                   e.target.style.display = 'none';
@@ -442,16 +452,16 @@ export default function ProductDetail() {
                                 }}
                               />
                               {isSelected && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
                                   <Check className="w-6 h-6 text-white drop-shadow-lg" />
                                 </div>
                               )}
                             </>
                           ) : (
                             <>
-                              <div className="w-full h-full" style={{ backgroundColor: color.code }} />
+                              <div className="w-full h-full pointer-events-none" style={{ backgroundColor: color.code }} />
                               {isSelected && (
-                                <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                   <Check className="w-6 h-6 text-white drop-shadow-lg" />
                                 </div>
                               )}
