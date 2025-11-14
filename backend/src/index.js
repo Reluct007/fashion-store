@@ -6,29 +6,7 @@
 import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from './db.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
-let products = [
-  {
-    id: 1,
-    name: 'Elegant Summer Dress',
-    price: 89.99,
-    originalPrice: 129.99,
-    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400',
-    rating: 4.5,
-    reviews: 128,
-    category: 'Dresses',
-    onSale: true
-  },
-  {
-    id: 2,
-    name: 'Classic White Shirt',
-    price: 49.99,
-    image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=400',
-    rating: 4.8,
-    reviews: 256,
-    category: 'Tops',
-    onSale: false
-  }
-];
+let products = [];
 
 let orders = [];
 let dbInitialized = false;

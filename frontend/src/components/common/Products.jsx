@@ -24,26 +24,6 @@ export default function Products({ data = {} }) {
       // 如果 API 失败，使用示例数据作为后备
       setProducts([
     {
-      id: 1,
-      name: 'Elegant Summer Dress',
-      price: 89.99,
-      originalPrice: 129.99,
-      image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400',
-      rating: 4.5,
-      reviews: 128,
-      category: 'Dresses',
-      onSale: true
-    },
-    {
-      id: 2,
-      name: 'Classic White Shirt',
-      price: 49.99,
-      image: 'https://images.unsplash.com/photo-1603252109303-2751441dd157?w=400',
-      rating: 4.8,
-      reviews: 256,
-      category: 'Tops'
-    },
-    {
       id: 3,
       name: 'Denim Jacket',
       price: 79.99,
