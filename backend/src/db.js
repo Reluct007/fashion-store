@@ -659,3 +659,85 @@ export async function getEmailSubscriptionStats(env) {
   }
 }
 
+/**
+ * 保存留言
+ */
+export async function saveContactMessage(env, contactData) {
+  if (!env.DB) return null;
+  
+  try {
+    // 确保表存在
+    await env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS contact_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        subject TEXT,
+        message TEXT NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        read_at DATETIME,
+        status TEXT DEFAULT 'unread'
+      )
+    `).run();
+    
+    // 插入留言
+    const result = await env.DB.prepare(
+      'INSERT INTO contact_messages (name, email, subject, message, ip_address, user_agent) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(
+      contactData.name,
+      contactData.email,
+      contactData.subject || null,
+      contactData.message,
+      contactData.ip_address || null,
+      contactData.user_agent || null
+    ).run();
+    
+    return { id: result.meta.last_row_id, ...contactData };
+  } catch (error) {
+    console.error('Error saving contact message:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取所有留言（需要认证）
+ */
+export async function getContactMessages(env, filters = {}) {
+  if (!env.DB) return [];
+  
+  try {
+    let query = 'SELECT * FROM contact_messages WHERE 1=1';
+    const params = [];
+    
+    if (filters.status) {
+      query += ' AND status = ?';
+      params.push(filters.status);
+    }
+    
+    if (filters.start_date) {
+      query += ' AND created_at >= ?';
+      params.push(filters.start_date);
+    }
+    
+    if (filters.end_date) {
+      query += ' AND created_at <= ?';
+      params.push(filters.end_date);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    if (filters.limit) {
+      query += ' LIMIT ?';
+      params.push(filters.limit);
+    }
+    
+    const { results } = await env.DB.prepare(query).bind(...params).all();
+    return results || [];
+  } catch (error) {
+    console.error('Error getting contact messages:', error);
+    return [];
+  }
+}
+

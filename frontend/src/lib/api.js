@@ -711,6 +711,24 @@ export async function getEmailSubscriptionStats() {
 }
 
 /**
+ * 提交留言
+ */
+export async function submitContactMessage(contactData) {
+  const response = await fetch(`${API_URL}/api/contact`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(contactData),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to submit message');
+  }
+  return response.json();
+}
+
+/**
  * 获取活跃用户数（基于点击统计中的唯一 IP 地址，需要认证）
  */
 export async function getActiveUsersCount() {

@@ -3,7 +3,8 @@
  * Cloudflare Workers 后端服务
  */
 
-import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from './db.js';
+import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, saveContactMessage, getContactMessages } from './db.js';
+import { sendSubscriptionNotification, sendContactNotification } from './email.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
 let products = [];
@@ -562,6 +563,16 @@ async function subscribeEmailHandler(request, env) {
     
     const result = await subscribeEmail(env, email, source || 'website');
     
+    // 如果是新订阅（不是已存在的），发送通知邮件
+    if (result && result.message === 'Subscribed successfully' || result.message === 'Resubscribed successfully') {
+      try {
+        await sendSubscriptionNotification(env, email, source || 'website');
+      } catch (emailError) {
+        // 邮件发送失败不影响订阅流程
+        console.error('Failed to send subscription notification:', emailError);
+      }
+    }
+    
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -676,6 +687,96 @@ async function getEmailSubscriptionStatsHandler(request, env) {
   });
 }
 
+// 提交留言
+async function submitContactHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  try {
+    const contactData = await request.json();
+    const { name, email, subject, message } = contactData;
+    
+    // 验证必填字段
+    if (!name || !email || !message) {
+      return new Response(JSON.stringify({ error: 'Name, email, and message are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (!email.includes('@')) {
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    // 获取客户端 IP 和 User-Agent
+    const clientIP = request.headers.get('CF-Connecting-IP') || 
+                     request.headers.get('X-Forwarded-For')?.split(',')[0] || 
+                     'unknown';
+    const userAgent = request.headers.get('User-Agent') || 'unknown';
+    
+    // 保存留言
+    const result = await saveContactMessage(env, {
+      name,
+      email,
+      subject: subject || null,
+      message,
+      ip_address: clientIP,
+      user_agent: userAgent,
+    });
+    
+    // 发送通知邮件给管理员
+    try {
+      await sendContactNotification(env, { name, email, subject, message });
+    } catch (emailError) {
+      // 邮件发送失败不影响留言保存
+      console.error('Failed to send contact notification:', emailError);
+    }
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Message submitted successfully',
+      id: result.id 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error submitting contact message:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to submit message' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 获取所有留言（需要认证）
+async function getContactMessagesHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  const url = new URL(request.url);
+  const filters = {
+    status: url.searchParams.get('status') || undefined,
+    start_date: url.searchParams.get('start_date') || undefined,
+    end_date: url.searchParams.get('end_date') || undefined,
+    limit: url.searchParams.get('limit') ? parseInt(url.searchParams.get('limit')) : undefined
+  };
+  
+  const messages = await getContactMessages(env, filters);
+  
+  return new Response(JSON.stringify(messages), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 // 主处理函数
 export default {
   async fetch(request, env, ctx) {
@@ -741,6 +842,15 @@ export default {
       // 取消订阅 API（公开端点）
       if (path === '/api/email-subscriptions/unsubscribe' && request.method === 'POST') {
         return unsubscribeEmailHandler(request, env);
+      }
+      
+      // 留言 API
+      if (path.startsWith('/api/contact')) {
+        if (path === '/api/contact' && request.method === 'POST') {
+          return submitContactHandler(request, env);
+        } else if (path === '/api/contact' && request.method === 'GET') {
+          return getContactMessagesHandler(request, env);
+        }
       }
       
       // 产品 API
