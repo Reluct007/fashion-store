@@ -5,6 +5,20 @@ main = "src/index.js"
 [vars]
 ENVIRONMENT = "production"
 
+# 邮件服务配置（推荐使用 Resend）
+# 在 Cloudflare Dashboard 的 Workers & Pages → Settings → Variables 中配置以下变量：
+# EMAIL_SERVICE = "resend"  # 可选: resend, sendgrid, mailgun
+# EMAIL_API_KEY = "your_api_key_here"  # 从邮件服务商获取
+# EMAIL_FROM = "noreply@yourdomain.com"  # 发件人邮箱
+# ADMIN_EMAIL = "admin@yourdomain.com"  # 管理员邮箱（接收通知）
+# 
+# 或者通过系统配置 API 在数据库中配置（更安全）：
+# - admin_email: 管理员邮箱
+# - email_api_key: 邮件服务 API Key
+# - email_from: 发件人邮箱
+# 
+# 详细配置说明请参考 EMAIL_CONFIG.md
+
 # D1 数据库配置
 [[d1_databases]]
 binding = "DB"
