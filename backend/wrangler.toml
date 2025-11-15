@@ -8,8 +8,8 @@ ENVIRONMENT = "production"
 # 邮件服务配置
 EMAIL_SERVICE = "resend"
 EMAIL_API_KEY = "re_bxmVM2pT_4pGb1LLK2HFvZN6QWuPi8hwq"
-EMAIL_FROM = "onboarding@resend.dev"  # 注意：Resend 需要使用已验证的域名或测试邮箱
-ADMIN_EMAIL = "send.mail@saysno.com"
+EMAIL_FROM = "no-reply@mail.saysno.com"  # 使用已验证的域名邮箱
+ADMIN_EMAIL = "reluct007@gmail.com"  # 接收通知的管理员邮箱（可以是任何有效邮箱）
 
 # 注意：
 # 1. EMAIL_FROM 如果使用自定义邮箱（如 gmail.com），需要在 Resend 中验证域名
