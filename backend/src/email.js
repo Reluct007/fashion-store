@@ -17,14 +17,14 @@ export async function sendEmail(env, options) {
   // 如果没有配置 API Key，尝试从系统配置获取
   if (!apiKey && env.DB) {
     try {
-      const emailConfig = await env.DB.prepare('SELECT value FROM system_configs WHERE key = ?').bind('email_api_key').first();
+      const emailConfig = await env.DB.prepare('SELECT config_value FROM system_configs WHERE config_key = ?').bind('email_api_key').first();
       if (emailConfig) {
-        apiKey = emailConfig.value;
+        apiKey = emailConfig.config_value;
       }
       
-      const fromConfig = await env.DB.prepare('SELECT value FROM system_configs WHERE key = ?').bind('email_from').first();
+      const fromConfig = await env.DB.prepare('SELECT config_value FROM system_configs WHERE config_key = ?').bind('email_from').first();
       if (fromConfig) {
-        fromEmail = fromConfig.value;
+        fromEmail = fromConfig.config_value;
       }
     } catch (error) {
       console.warn('Failed to load email config from database:', error);
@@ -124,9 +124,9 @@ export async function sendSubscriptionNotification(env, subscriberEmail, source 
   
   if (!adminEmail && env.DB) {
     try {
-      const config = await env.DB.prepare('SELECT value FROM system_configs WHERE key = ?').bind('admin_email').first();
+      const config = await env.DB.prepare('SELECT config_value FROM system_configs WHERE config_key = ?').bind('admin_email').first();
       if (config) {
-        adminEmail = config.value;
+        adminEmail = config.config_value;
       }
     } catch (error) {
       console.warn('Failed to load admin email from database:', error);
@@ -170,9 +170,9 @@ export async function sendContactNotification(env, contactData) {
   
   if (!adminEmail && env.DB) {
     try {
-      const config = await env.DB.prepare('SELECT value FROM system_configs WHERE key = ?').bind('admin_email').first();
+      const config = await env.DB.prepare('SELECT config_value FROM system_configs WHERE config_key = ?').bind('admin_email').first();
       if (config) {
-        adminEmail = config.value;
+        adminEmail = config.config_value;
       }
     } catch (error) {
       console.warn('Failed to load admin email from database:', error);
