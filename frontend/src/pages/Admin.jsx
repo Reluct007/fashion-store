@@ -4,7 +4,7 @@ import {
   Package, Users, TrendingUp, 
   Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail, Check
 } from 'lucide-react';
-import { getProducts, createProduct, updateProduct, deleteProduct, getEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats } from '../lib/api';
+import { getProducts, createProduct, updateProduct, deleteProduct, getEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, getActiveUsersCount } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
 import ClickStatsManager from '../components/ClickStatsManager';
 
@@ -18,6 +18,7 @@ export default function Admin() {
   const [emailSubscriptions, setEmailSubscriptions] = useState([]);
   const [emailStats, setEmailStats] = useState({ total: 0, active: 0, unsubscribed: 0 });
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+  const [activeUsers, setActiveUsers] = useState(0);
   
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
@@ -37,7 +38,19 @@ export default function Admin() {
   // 从 API 加载产品数据
   useEffect(() => {
     loadProducts();
+    loadActiveUsers();
   }, []);
+
+  // 加载活跃用户数
+  const loadActiveUsers = async () => {
+    try {
+      const count = await getActiveUsersCount();
+      setActiveUsers(count);
+    } catch (err) {
+      console.error('Error loading active users:', err);
+      setActiveUsers(0);
+    }
+  };
 
   // 加载邮箱订阅数据
   useEffect(() => {
@@ -166,7 +179,7 @@ export default function Admin() {
 
   const stats = {
     totalProducts: products.length,
-    activeUsers: 3420,
+    activeUsers: activeUsers,
     emailSubscriptions: emailStats.active
   };
 

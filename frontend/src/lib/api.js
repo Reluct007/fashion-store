@@ -710,3 +710,42 @@ export async function getEmailSubscriptionStats() {
   return response.json();
 }
 
+/**
+ * 获取活跃用户数（基于点击统计中的唯一 IP 地址，需要认证）
+ */
+export async function getActiveUsersCount() {
+  try {
+    // 获取最近30天的点击统计详情，用于计算唯一用户数
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    const response = await fetch(`${API_URL}/api/click-stats/detail?start_date=${startDate}&limit=10000`, {
+      headers: getAuthHeaders(),
+    });
+    
+    if (!response.ok) {
+      // 如果 API 不可用，返回 0
+      return 0;
+    }
+    
+    const stats = await response.json();
+    
+    // 计算唯一 IP 地址数量
+    if (Array.isArray(stats) && stats.length > 0) {
+      const uniqueIPs = new Set();
+      stats.forEach(stat => {
+        if (stat.ip_address) {
+          uniqueIPs.add(stat.ip_address);
+        }
+      });
+      return uniqueIPs.size;
+    }
+    
+    return 0;
+  } catch (error) {
+    console.warn('Failed to fetch active users count:', error);
+    return 0;
+  }
+}
+
