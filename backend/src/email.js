@@ -51,20 +51,45 @@ export async function sendEmail(env, options) {
     let response;
     
     // 使用 Resend API（推荐）
+    // Resend API 文档: https://resend.com/docs/api-reference/emails/send-email
     if (emailService === 'resend' || !emailService) {
+      // Resend 的 to 字段可以是字符串或字符串数组
+      const toField = Array.isArray(to) ? to : [to];
+      
+      const requestBody = {
+        from: fromEmail,
+        to: toField,
+        subject: subject,
+      };
+      
+      // 如果提供了 html，添加 html 字段
+      if (html) {
+        requestBody.html = html;
+      }
+      
+      // 如果提供了 text，添加 text 字段，否则从 html 生成
+      if (text) {
+        requestBody.text = text;
+      } else if (html) {
+        requestBody.text = html.replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, '\n').trim();
+      }
+      
+      console.log('Resend API request:', {
+        url: 'https://api.resend.com/emails',
+        from: fromEmail,
+        to: toField,
+        subject: subject,
+        hasHtml: !!html,
+        hasText: !!requestBody.text
+      });
+      
       response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: Array.isArray(to) ? to : [to],
-          subject: subject,
-          html: html || text,
-          text: text || html?.replace(/<[^>]*>/g, ''),
-        }),
+        body: JSON.stringify(requestBody),
       });
     }
     // 使用 SendGrid API

@@ -4,7 +4,7 @@
  */
 
 import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, saveContactMessage, getContactMessages } from './db.js';
-import { sendSubscriptionNotification, sendContactNotification } from './email.js';
+import { sendSubscriptionNotification, sendContactNotification, sendEmail } from './email.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
 let products = [];
@@ -787,6 +787,74 @@ async function getContactMessagesHandler(request, env) {
   });
 }
 
+// 测试邮件发送功能
+async function testEmailHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  try {
+    // 获取测试邮箱地址（从请求参数或使用管理员邮箱）
+    const url = new URL(request.url);
+    const testEmail = url.searchParams.get('to') || env.ADMIN_EMAIL || 'send.mail@saysno.com';
+    
+    console.log('Testing email service:', {
+      service: env.EMAIL_SERVICE || 'resend',
+      from: env.EMAIL_FROM || 'onboarding@resend.dev',
+      to: testEmail,
+      hasApiKey: !!env.EMAIL_API_KEY
+    });
+    
+    const result = await sendEmail(env, {
+      to: testEmail,
+      subject: '测试邮件 - Fashion Store',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #e11d48;">邮件服务测试</h2>
+          <p>这是一封测试邮件，用于验证邮件服务配置是否正确。</p>
+          <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>发送时间：</strong> ${new Date().toLocaleString('zh-CN')}</p>
+            <p><strong>邮件服务：</strong> ${env.EMAIL_SERVICE || 'resend'}</p>
+            <p><strong>发件人：</strong> ${env.EMAIL_FROM || 'onboarding@resend.dev'}</p>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">如果您收到这封邮件，说明邮件服务配置成功！</p>
+        </div>
+      `,
+      text: `邮件服务测试\n\n这是一封测试邮件，用于验证邮件服务配置是否正确。\n\n发送时间：${new Date().toLocaleString('zh-CN')}\n邮件服务：${env.EMAIL_SERVICE || 'resend'}\n发件人：${env.EMAIL_FROM || 'onboarding@resend.dev'}\n\n如果您收到这封邮件，说明邮件服务配置成功！`
+    });
+    
+    return new Response(JSON.stringify({
+      success: result.success,
+      message: result.success ? '测试邮件已发送' : '测试邮件发送失败',
+      result: result,
+      config: {
+        service: env.EMAIL_SERVICE || 'resend',
+        from: env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: testEmail,
+        hasApiKey: !!env.EMAIL_API_KEY
+      }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error testing email:', error);
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message || 'Failed to send test email',
+      stack: error.stack
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // 主处理函数
 export default {
   async fetch(request, env, ctx) {
@@ -861,6 +929,11 @@ export default {
         } else if (path === '/api/contact' && request.method === 'GET') {
           return getContactMessagesHandler(request, env);
         }
+      }
+      
+      // 测试邮件 API（需要认证）
+      if (path === '/api/test-email' && request.method === 'GET') {
+        return testEmailHandler(request, env);
       }
       
       // 产品 API
