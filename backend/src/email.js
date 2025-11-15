@@ -32,9 +32,20 @@ export async function sendEmail(env, options) {
   }
   
   if (!apiKey) {
-    console.warn('Email API key not configured. Email will not be sent.');
-    return { success: false, error: 'Email service not configured' };
+    console.warn('Email API key not configured. Email will not be sent.', {
+      emailService,
+      hasEnvApiKey: !!env.EMAIL_API_KEY,
+      hasDB: !!env.DB
+    });
+    return { success: false, error: 'Email service not configured: API key is missing' };
   }
+  
+  console.log('Sending email:', {
+    service: emailService,
+    from: fromEmail,
+    to: to,
+    subject: subject
+  });
   
   try {
     let response;
@@ -103,14 +114,43 @@ export async function sendEmail(env, options) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Email service error:', errorText);
-      return { success: false, error: `Email service returned ${response.status}` };
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { message: errorText };
+      }
+      console.error('Email service error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        from: fromEmail,
+        to: to,
+        service: emailService
+      });
+      return { 
+        success: false, 
+        error: `Email service returned ${response.status}: ${errorData.message || errorText}`,
+        details: errorData
+      };
     }
     
     const result = await response.json().catch(() => ({}));
+    console.log('Email sent successfully:', {
+      id: result.id || result.message_id,
+      from: fromEmail,
+      to: to,
+      service: emailService
+    });
     return { success: true, id: result.id || result.message_id };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email:', {
+      error: error.message,
+      stack: error.stack,
+      from: fromEmail,
+      to: to,
+      service: emailService
+    });
     return { success: false, error: error.message };
   }
 }
@@ -134,7 +174,10 @@ export async function sendSubscriptionNotification(env, subscriberEmail, source 
   }
   
   if (!adminEmail) {
-    console.warn('Admin email not configured. Notification will not be sent.');
+    console.warn('Admin email not configured. Notification will not be sent.', {
+      hasEnvAdminEmail: !!env.ADMIN_EMAIL,
+      hasDB: !!env.DB
+    });
     return { success: false, error: 'Admin email not configured' };
   }
   
@@ -180,7 +223,10 @@ export async function sendContactNotification(env, contactData) {
   }
   
   if (!adminEmail) {
-    console.warn('Admin email not configured. Notification will not be sent.');
+    console.warn('Admin email not configured. Notification will not be sent.', {
+      hasEnvAdminEmail: !!env.ADMIN_EMAIL,
+      hasDB: !!env.DB
+    });
     return { success: false, error: 'Admin email not configured' };
   }
   

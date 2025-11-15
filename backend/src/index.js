@@ -564,9 +564,14 @@ async function subscribeEmailHandler(request, env) {
     const result = await subscribeEmail(env, email, source || 'website');
     
     // 如果是新订阅（不是已存在的），发送通知邮件
-    if (result && result.message === 'Subscribed successfully' || result.message === 'Resubscribed successfully') {
+    if (result && (result.message === 'Subscribed successfully' || result.message === 'Resubscribed successfully')) {
       try {
-        await sendSubscriptionNotification(env, email, source || 'website');
+        const emailResult = await sendSubscriptionNotification(env, email, source || 'website');
+        if (!emailResult.success) {
+          console.error('Failed to send subscription notification:', emailResult.error, emailResult.details);
+        } else {
+          console.log('Subscription notification sent successfully:', emailResult.id);
+        }
       } catch (emailError) {
         // 邮件发送失败不影响订阅流程
         console.error('Failed to send subscription notification:', emailError);
@@ -728,7 +733,12 @@ async function submitContactHandler(request, env) {
     
     // 发送通知邮件给管理员
     try {
-      await sendContactNotification(env, { name, email, subject, message });
+      const emailResult = await sendContactNotification(env, { name, email, subject, message });
+      if (!emailResult.success) {
+        console.error('Failed to send contact notification:', emailResult.error, emailResult.details);
+      } else {
+        console.log('Contact notification sent successfully:', emailResult.id);
+      }
     } catch (emailError) {
       // 邮件发送失败不影响留言保存
       console.error('Failed to send contact notification:', emailError);
