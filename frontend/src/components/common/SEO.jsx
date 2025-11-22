@@ -40,8 +40,8 @@ export default function SEO({
     } else if (canonicalUrl) {
       // 确保 canonical URL 是绝对 URL
       if (!canonicalUrl.startsWith('http')) {
-        // 如果是相对路径，转换为绝对路径
-        canonicalUrl = `${baseUrl}${canonicalUrl.startsWith('/') ? '' : '/'}${canonicalUrl}`;
+      // 如果是相对路径，转换为绝对路径
+      canonicalUrl = `${baseUrl}${canonicalUrl.startsWith('/') ? '' : '/'}${canonicalUrl}`;
       }
       // 移除查询参数和 hash（如果存在）
       try {
