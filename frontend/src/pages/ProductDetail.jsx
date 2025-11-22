@@ -48,9 +48,9 @@ export default function ProductDetail() {
       }
       if (productData.colors && productData.colors.length > 0) {
         setSelectedColor(productData.colors[0].name);
-        // 如果第一个颜色有图片，直接使用该颜色图片作为主图
-        if (productData.colors[0].image) {
-          setDisplayImage(productData.colors[0].image);
+        // 如果第一个颜色有独立的产品图片，使用该颜色的第一张产品图片
+        if (productData.colors[0].productImages && productData.colors[0].productImages.length > 0) {
+          setDisplayImage(productData.colors[0].productImages[0]);
         } else if (productData.images && productData.images.length > 0) {
           setDisplayImage(productData.images[0]);
         } else if (productData.image) {
@@ -408,14 +408,14 @@ export default function ProductDetail() {
                             e.preventDefault();
                             e.stopPropagation();
                             setSelectedColor(color.name);
-                            // 如果选择了颜色，切换主图片到该颜色的图片
-                            if (color.image) {
-                              setDisplayImage(color.image);
-                              // 如果该颜色图片在主图片列表中，也更新selectedImage索引
-                              const imageIndex = product.images?.findIndex(img => img === color.image);
-                              if (imageIndex >= 0) {
-                                setSelectedImage(imageIndex);
-                              }
+                            // 如果该颜色有独立的产品图片，切换到该颜色的第一张产品图片
+                            if (color.productImages && color.productImages.length > 0) {
+                              setDisplayImage(color.productImages[0]);
+                              setSelectedImage(0);
+                            } else if (product.images && product.images.length > 0) {
+                              // 如果没有独立的产品图片，使用默认的第一张图片
+                              setDisplayImage(product.images[0]);
+                              setSelectedImage(0);
                             }
                           }}
                           className={`relative rounded-lg border-2 transition-all overflow-hidden ${
