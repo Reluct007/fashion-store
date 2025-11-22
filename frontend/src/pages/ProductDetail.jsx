@@ -223,7 +223,7 @@ export default function ProductDetail() {
                 <img
                   src={displayImage || (product.images && product.images[selectedImage] ? product.images[selectedImage] : product.image)}
                   alt={product.name}
-                  className="w-full h-[500px] object-cover rounded-lg"
+                  className="w-full object-contain rounded-lg"
                   onError={(e) => {
                     // 如果当前图片加载失败，回退到默认图片
                     if (displayImage && displayImage !== product.image) {
