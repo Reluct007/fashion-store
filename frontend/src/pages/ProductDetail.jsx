@@ -256,35 +256,6 @@ export default function ProductDetail() {
                         </button>
                       );
                     })}
-                    {/* 显示颜色图片（如果颜色图片不在主图片列表中） */}
-                    {product.colors && product.colors.map((color, index) => {
-                      if (!color.image) return null;
-                      // 检查颜色图片是否已在主图片列表中
-                      const isInMainImages = product.images && product.images.includes(color.image);
-                      if (isInMainImages) return null;
-                      const isCurrentImage = displayImage === color.image;
-                      return (
-                        <button
-                          key={`color-${index}`}
-                          onClick={() => {
-                            setDisplayImage(color.image);
-                            setSelectedColor(color.name);
-                          }}
-                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
-                            isCurrentImage || selectedColor === color.name
-                              ? 'border-rose-600 ring-2 ring-rose-200' 
-                              : 'border-gray-300 hover:border-rose-300'
-                          }`}
-                          title={color.name}
-                        >
-                          <img
-                            src={color.image}
-                            alt={color.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      );
-                    })}
                   </div>
                 ) : null}
                 {/* 促销标签 */}
