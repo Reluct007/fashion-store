@@ -103,7 +103,9 @@ function normalizeProduct(product, index, slugMap = null) {
         colors = colors.map(color => {
           if (color.productImages && typeof color.productImages === 'string') {
             // 将 | 分隔的字符串转换为数组
-            color.productImages = color.productImages.split('|').map(url => url.trim()).filter(url => url);
+            const images = color.productImages.split('|').map(url => url.trim()).filter(url => url);
+            console.log(`🔧 解析颜色 ${color.name} 的 productImages:`, images.length, '张图片');
+            color.productImages = images;
           }
           return color;
         });

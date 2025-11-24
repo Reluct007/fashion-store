@@ -407,15 +407,24 @@ export default function ProductDetail() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            console.log('🎨 颜色切换:', color.name);
+                            console.log('📷 productImages:', color.productImages);
+                            console.log('📷 productImages 类型:', typeof color.productImages);
+                            console.log('📷 是否为数组:', Array.isArray(color.productImages));
+                            
                             setSelectedColor(color.name);
                             // 如果该颜色有独立的产品图片，切换到该颜色的第一张产品图片
                             if (color.productImages && color.productImages.length > 0) {
+                              console.log('✅ 切换到颜色图片:', color.productImages[0]);
                               setDisplayImage(color.productImages[0]);
                               setSelectedImage(0);
                             } else if (product.images && product.images.length > 0) {
                               // 如果没有独立的产品图片，使用默认的第一张图片
+                              console.log('⚠️ 使用默认图片:', product.images[0]);
                               setDisplayImage(product.images[0]);
                               setSelectedImage(0);
+                            } else {
+                              console.log('❌ 没有可用的图片');
                             }
                           }}
                           className={`relative rounded-lg border-2 transition-all overflow-hidden ${
