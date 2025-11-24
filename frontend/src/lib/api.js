@@ -82,15 +82,22 @@ function normalizeProduct(product, index, slugMap = null) {
     ? Number(originalPriceValue) 
     : null;
   
-  // 处理sizes和colors（可能是字符串格式的JSON）
+  // 处理sizes和colors（可能是字符串格式的JSON或管道分隔的字符串）
   let sizes = product.sizes || [];
   let colors = product.colors || [];
   
-  if (typeof product.size === 'string') {
+  if (typeof product.size === 'string' && product.size.trim()) {
     try {
+      // 先尝试作为 JSON 解析
       sizes = JSON.parse(product.size);
     } catch (e) {
-      console.warn('Failed to parse size:', e);
+      // 如果不是 JSON，尝试作为管道分隔的字符串解析
+      if (product.size.includes('|')) {
+        sizes = product.size.split('|').map(s => s.trim()).filter(s => s);
+        console.log('🔧 解析尺寸（管道分隔）:', sizes);
+      } else {
+        console.warn('Failed to parse size:', e);
+      }
     }
   }
   
