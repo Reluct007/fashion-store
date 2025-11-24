@@ -97,6 +97,17 @@ function normalizeProduct(product, index, slugMap = null) {
   if (typeof product.color === 'string') {
     try {
       colors = JSON.parse(product.color);
+      // 处理每个颜色的 productImages 字段
+      // 如果是字符串（用 | 分隔的 URL），转换为数组
+      if (Array.isArray(colors)) {
+        colors = colors.map(color => {
+          if (color.productImages && typeof color.productImages === 'string') {
+            // 将 | 分隔的字符串转换为数组
+            color.productImages = color.productImages.split('|').map(url => url.trim()).filter(url => url);
+          }
+          return color;
+        });
+      }
     } catch (e) {
       console.warn('Failed to parse color:', e);
     }
