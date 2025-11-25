@@ -335,52 +335,7 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Size Selection */}
-              {product.sizes && product.sizes.length > 0 && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Size {selectedSize && <span className="text-gray-500">({selectedSize})</span>}
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => {
-                      // 简化可用性检查：如果没有库存信息，默认可用
-                      // 只有在有库存信息且明确显示为0时才不可用
-                      const hasStock = product.stock && product.stock[size];
-                      const isAvailable = !hasStock || 
-                        (selectedColor 
-                          ? (product.stock[size][selectedColor] || 0) > 0
-                          : product.colors && product.colors.length > 0
-                            ? product.colors.some(color => 
-                                product.stock[size] && (product.stock[size][color.name] || 0) > 0
-                              )
-                            : true);
-                      const isSelected = selectedSize === size;
-                      return (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setSelectedSize(size);
-                          }}
-                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
-                            isSelected
-                              ? 'border-rose-600 bg-rose-50 text-rose-600 cursor-pointer'
-                              : isAvailable
-                              ? 'border-gray-300 hover:border-rose-300 text-gray-700 cursor-pointer'
-                              : 'border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Color Selection */}
+              {/* Color Selection - 颜色在上 */}
               {product.colors && product.colors.length > 0 && (
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -407,24 +362,9 @@ export default function ProductDetail() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('🎨 颜色切换:', color.name);
-                            console.log('📷 productImages:', color.productImages);
-                            console.log('📷 productImages 类型:', typeof color.productImages);
-                            console.log('📷 是否为数组:', Array.isArray(color.productImages));
-                            
-                            setSelectedColor(color.name);
-                            // 如果该颜色有独立的产品图片，切换到该颜色的第一张产品图片
-                            if (color.productImages && color.productImages.length > 0) {
-                              console.log('✅ 切换到颜色图片:', color.productImages[0]);
-                              setDisplayImage(color.productImages[0]);
-                              setSelectedImage(0);
-                            } else if (product.images && product.images.length > 0) {
-                              // 如果没有独立的产品图片，使用默认的第一张图片
-                              console.log('⚠️ 使用默认图片:', product.images[0]);
-                              setDisplayImage(product.images[0]);
-                              setSelectedImage(0);
-                            } else {
-                              console.log('❌ 没有可用的图片');
+                            // 点击颜色时跳转到对应的产品页面
+                            if (color.url) {
+                              window.location.href = `/product/${color.url}`;
                             }
                           }}
                           className={`relative rounded-lg border-2 transition-all overflow-hidden ${
@@ -468,6 +408,51 @@ export default function ProductDetail() {
                               )}
                             </>
                           )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Selection - 尺寸在下 */}
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Size {selectedSize && <span className="text-gray-500">({selectedSize})</span>}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.sizes.map((size) => {
+                      // 简化可用性检查：如果没有库存信息，默认可用
+                      // 只有在有库存信息且明确显示为0时才不可用
+                      const hasStock = product.stock && product.stock[size];
+                      const isAvailable = !hasStock || 
+                        (selectedColor 
+                          ? (product.stock[size][selectedColor] || 0) > 0
+                          : product.colors && product.colors.length > 0
+                            ? product.colors.some(color => 
+                                product.stock[size] && (product.stock[size][color.name] || 0) > 0
+                              )
+                            : true);
+                      const isSelected = selectedSize === size;
+                      return (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedSize(size);
+                          }}
+                          className={`px-4 py-2 border-2 rounded-lg font-semibold transition-colors ${
+                            isSelected
+                              ? 'border-rose-600 bg-rose-50 text-rose-600 cursor-pointer'
+                              : isAvailable
+                              ? 'border-gray-300 hover:border-rose-300 text-gray-700 cursor-pointer'
+                              : 'border-gray-200 text-gray-400 cursor-not-allowed opacity-50'
+                          }`}
+                        >
+                          {size}
                         </button>
                       );
                     })}
