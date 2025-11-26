@@ -606,7 +606,7 @@ export default function ProductDetail() {
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-full h-64 object-cover group-hover:scale-105 transition-transform"
+                        className="w-full aspect-[3/4] object-cover object-top group-hover:scale-105 transition-transform"
                       />
                       {item.onSale && (
                         <span className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-sm font-semibold">

@@ -106,7 +106,7 @@ export default function Products({ data = {} }) {
                   <img 
                     src={product.image} 
                     alt={product.name}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full aspect-[3/4] object-cover object-top group-hover:scale-105 transition-transform duration-300"
                   />
                   {(product.onSale === true || product.onSale === 1) && (
                     <span className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-semibold">

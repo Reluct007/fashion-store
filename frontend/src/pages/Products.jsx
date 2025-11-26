@@ -137,7 +137,7 @@ export default function Products() {
                         <img
                           src={productImage}
                           alt={productName}
-                          className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full aspect-[3/4] object-cover object-top group-hover:scale-105 transition-transform duration-300"
                           onError={(e) => {
                             e.target.src = 'https://via.placeholder.com/400x400?text=No+Image';
                           }}
