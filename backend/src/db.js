@@ -761,7 +761,7 @@ export async function getAllCountdownTimers(env, publicOnly = false) {
   try {
     let query = 'SELECT * FROM countdown_timers';
     if (publicOnly) {
-      query += ' WHERE is_enabled = 1 AND end_date > datetime("now")';
+      query += ' WHERE is_enabled = 1 AND datetime(end_date) > datetime("now")';
     }
     query += ' ORDER BY created_at DESC';
     const { results } = await env.DB.prepare(query).all();
@@ -779,7 +779,7 @@ export async function getCountdownTimer(env, productId = null, category = null) 
   if (!env.DB) return null;
 
   try {
-    let query = 'SELECT * FROM countdown_timers WHERE is_enabled = 1 AND end_date > datetime("now")';
+    let query = 'SELECT * FROM countdown_timers WHERE is_enabled = 1 AND datetime(end_date) > datetime("now")';
     const params = [];
     
     if (productId) {
