@@ -52,26 +52,33 @@ export default function CountdownTimer({ endDate }) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm font-semibold text-gray-700">Sale ends in:</span>
+    <div className="flex items-center gap-3">
       <div className="flex gap-2">
         {timeLeft.days > 0 && (
-          <div className="bg-gray-100 px-3 py-1 rounded">
-            <span className="text-lg font-bold text-gray-900">{String(timeLeft.days).padStart(2, '0')}</span>
-            <span className="text-xs text-gray-600 ml-1">D</span>
+          <div className="bg-white px-4 py-3 rounded-lg shadow-sm border border-red-200">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-red-600">{String(timeLeft.days).padStart(2, '0')}</div>
+              <div className="text-xs text-gray-600 uppercase mt-1">DAYS</div>
+            </div>
           </div>
         )}
-        <div className="bg-gray-100 px-3 py-1 rounded">
-          <span className="text-lg font-bold text-gray-900">{String(timeLeft.hours).padStart(2, '0')}</span>
-          <span className="text-xs text-gray-600 ml-1">H</span>
+        <div className="bg-white px-4 py-3 rounded-lg shadow-sm border border-red-200">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-red-600">{String(timeLeft.hours).padStart(2, '0')}</div>
+            <div className="text-xs text-gray-600 uppercase mt-1">HRS</div>
+          </div>
         </div>
-        <div className="bg-gray-100 px-3 py-1 rounded">
-          <span className="text-lg font-bold text-gray-900">{String(timeLeft.minutes).padStart(2, '0')}</span>
-          <span className="text-xs text-gray-600 ml-1">M</span>
+        <div className="bg-white px-4 py-3 rounded-lg shadow-sm border border-red-200">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-red-600">{String(timeLeft.minutes).padStart(2, '0')}</div>
+            <div className="text-xs text-gray-600 uppercase mt-1">MINS</div>
+          </div>
         </div>
-        <div className="bg-gray-100 px-3 py-1 rounded">
-          <span className="text-lg font-bold text-gray-900">{String(timeLeft.seconds).padStart(2, '0')}</span>
-          <span className="text-xs text-gray-600 ml-1">S</span>
+        <div className="bg-white px-4 py-3 rounded-lg shadow-sm border border-red-200">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-red-600">{String(timeLeft.seconds).padStart(2, '0')}</div>
+            <div className="text-xs text-gray-600 uppercase mt-1">SECS</div>
+          </div>
         </div>
       </div>
     </div>
