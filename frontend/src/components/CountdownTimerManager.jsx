@@ -11,6 +11,7 @@ export default function CountdownTimerManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingTimer, setEditingTimer] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     product_id: '',
     category: '',
@@ -62,6 +63,7 @@ export default function CountdownTimerManager() {
 
   const handleEdit = (timer) => {
     setEditingTimer(timer.id);
+    setShowForm(true);
     setFormData({
       product_id: timer.product_id || '',
       category: timer.category || '',
@@ -112,8 +114,8 @@ export default function CountdownTimerManager() {
       
       await loadTimers();
       
-      // Reset form
       setEditingTimer(null);
+      setShowForm(false);
       setFormData({
         product_id: '',
         category: '',
@@ -170,6 +172,7 @@ export default function CountdownTimerManager() {
         <button
           onClick={() => {
             setEditingTimer(null);
+            setShowForm(true);
             setFormData({
               product_id: '',
               category: '',
@@ -192,7 +195,7 @@ export default function CountdownTimerManager() {
       )}
 
       {/* Form */}
-      {(editingTimer !== null || formData.product_id || formData.category) && (
+      {showForm && (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <h3 className="text-lg font-semibold mb-4">
             {editingTimer ? 'Edit Countdown Timer' : 'New Countdown Timer'}
@@ -286,6 +289,7 @@ export default function CountdownTimerManager() {
             <button
               onClick={() => {
                 setEditingTimer(null);
+                setShowForm(false);
                 setFormData({
                   product_id: '',
                   category: '',
