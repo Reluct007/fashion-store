@@ -887,7 +887,7 @@ async function getCountdownTimerHandler(request, env) {
   const productId = url.searchParams.get('product_id');
   const category = url.searchParams.get('category');
   
-  const timer = await getCountdownTimer(env, productId ? parseInt(productId) : null, category);
+  const timer = await getCountdownTimer(env, productId || null, category);
   
   return new Response(JSON.stringify(timer), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' }
