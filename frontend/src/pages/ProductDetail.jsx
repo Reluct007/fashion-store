@@ -32,7 +32,7 @@ export default function ProductDetail() {
   // 促销结束时间（示例：24小时后）
   const saleEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
   useEffect(() => {
     loadProduct();
