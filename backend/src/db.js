@@ -58,7 +58,7 @@ export async function initDatabase(env) {
 
       CREATE TABLE IF NOT EXISTS countdown_timers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER,
+        product_id TEXT,
         category TEXT,
         title TEXT,
         end_date DATETIME NOT NULL,

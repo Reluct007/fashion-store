@@ -91,7 +91,7 @@ export default function CountdownTimerManager() {
       
       const timerData = {
         ...formData,
-        product_id: formData.product_id ? parseInt(formData.product_id) : null,
+        product_id: formData.product_id || null,
         category: formData.category || null,
         end_date: new Date(formData.end_date).toISOString(),
         is_enabled: formData.is_enabled ? 1 : 0
