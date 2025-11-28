@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Package, Users, TrendingUp, 
-  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail, Check
+  Plus, Edit, Trash2, Save, X, Settings, LogOut, BarChart3, Mail, Check, Clock
 } from 'lucide-react';
 import { getProducts, createProduct, updateProduct, deleteProduct, getEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, getActiveUsersCount } from '../lib/api';
 import ProductConfigManager from '../components/ProductConfigManager';
 import ClickStatsManager from '../components/ClickStatsManager';
+import CountdownTimerManager from '../components/CountdownTimerManager';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -269,6 +270,17 @@ export default function Admin() {
           >
             <Mail className="w-5 h-5 inline mr-2" />
             Email Subscriptions
+          </button>
+          <button
+            onClick={() => setActiveTab('countdown')}
+            className={`px-6 py-3 font-semibold transition-colors ${
+              activeTab === 'countdown'
+                ? 'text-rose-600 border-b-2 border-rose-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Clock className="w-5 h-5 inline mr-2" />
+            Countdown Timers
           </button>
         </div>
 
@@ -630,8 +642,12 @@ export default function Admin() {
             </div>
           </div>
         )}
+
+        {/* Countdown Timers Tab */}
+        {activeTab === 'countdown' && (
+          <CountdownTimerManager />
+        )}
       </div>
     </div>
   );
 }
-

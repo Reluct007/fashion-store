@@ -3,7 +3,7 @@
  * Cloudflare Workers 后端服务
  */
 
-import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, saveContactMessage, getContactMessages } from './db.js';
+import { initDatabase, authenticateUser, getProductConfig, getAllProductConfigs, upsertProductConfig, deleteProductConfig, getSystemConfig, setSystemConfig, recordClickStat, getClickStats, getClickStatsDetail, subscribeEmail, unsubscribeEmail, getAllEmailSubscriptions, deleteEmailSubscription, getEmailSubscriptionStats, saveContactMessage, getContactMessages, getAllCountdownTimers, getCountdownTimer, upsertCountdownTimer, deleteCountdownTimer } from './db.js';
 import { sendSubscriptionNotification, sendContactNotification, sendEmail } from './email.js';
 
 // 简单的内存存储（用于兼容性，如果数据库未配置则使用内存）
@@ -855,6 +855,108 @@ async function testEmailHandler(request, env) {
   }
 }
 
+// 倒计时配置 API 处理函数
+async function getCountdownTimersHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const url = new URL(request.url);
+  const publicOnly = url.searchParams.get('public') === 'true';
+  
+  // 如果是公开访问，不需要认证
+  if (!publicOnly) {
+    const user = await verifyAuth(request, env);
+    if (!user || user.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
+  const timers = await getAllCountdownTimers(env, publicOnly);
+  
+  return new Response(JSON.stringify(timers), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function getCountdownTimerHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const url = new URL(request.url);
+  const productId = url.searchParams.get('product_id');
+  const category = url.searchParams.get('category');
+  
+  const timer = await getCountdownTimer(env, productId ? parseInt(productId) : null, category);
+  
+  return new Response(JSON.stringify(timer), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
+async function upsertCountdownTimerHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  try {
+    const timerData = await request.json();
+    const timer = await upsertCountdownTimer(env, timerData);
+    
+    return new Response(JSON.stringify(timer), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error upserting countdown timer:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to save countdown timer' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function deleteCountdownTimerHandler(request, env) {
+  await ensureDBInitialized(env);
+  
+  const user = await verifyAuth(request, env);
+  if (!user || user.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  
+  try {
+    const url = new URL(request.url);
+    const id = parseInt(url.pathname.split('/').pop());
+    
+    const success = await deleteCountdownTimer(env, id);
+    
+    if (success) {
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } else {
+      return new Response(JSON.stringify({ error: 'Failed to delete countdown timer' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting countdown timer:', error);
+    return new Response(JSON.stringify({ error: error.message || 'Failed to delete countdown timer' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // 主处理函数
 export default {
   async fetch(request, env, ctx) {
@@ -934,6 +1036,19 @@ export default {
       // 测试邮件 API（需要认证）
       if (path === '/api/test-email' && request.method === 'GET') {
         return testEmailHandler(request, env);
+      }
+      
+      // 倒计时配置 API
+      if (path.startsWith('/api/countdown-timers')) {
+        if (path === '/api/countdown-timers' && request.method === 'GET') {
+          return getCountdownTimersHandler(request, env);
+        } else if (path === '/api/countdown-timers/query' && request.method === 'GET') {
+          return getCountdownTimerHandler(request, env);
+        } else if (path === '/api/countdown-timers' && request.method === 'POST') {
+          return upsertCountdownTimerHandler(request, env);
+        } else if (path.startsWith('/api/countdown-timers/') && request.method === 'DELETE') {
+          return deleteCountdownTimerHandler(request, env);
+        }
       }
       
       // 产品 API

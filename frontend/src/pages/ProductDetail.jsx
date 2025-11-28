@@ -24,12 +24,15 @@ export default function ProductDetail() {
   const [error, setError] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [buttonConfig, setButtonConfig] = useState(null);
+  const [countdownTimer, setCountdownTimer] = useState(null);
   // 尺码和颜色选择
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
 
   // 促销结束时间（示例：24小时后）
   const saleEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
 
   useEffect(() => {
     loadProduct();
@@ -72,6 +75,35 @@ export default function ProductDetail() {
       // 检查是否有按钮配置
       if (productData.buttonConfig) {
         setButtonConfig(productData.buttonConfig);
+      }
+
+      // 加载倒计时配置
+      try {
+        const timerResponse = await fetch(
+          `${API_BASE_URL}/api/countdown-timers/query?product_id=${productData.id}`
+        );
+        if (timerResponse.ok) {
+          const timerData = await timerResponse.json();
+          if (timerData && timerData.end_date) {
+            setCountdownTimer(timerData);
+          }
+        }
+        
+        // 如果没有产品特定的倒计时，尝试获取分类倒计时
+        if (!countdownTimer && productData.category) {
+          const categoryTimerResponse = await fetch(
+            `${API_BASE_URL}/api/countdown-timers/query?category=${encodeURIComponent(productData.category)}`
+          );
+          if (categoryTimerResponse.ok) {
+            const categoryTimerData = await categoryTimerResponse.json();
+            if (categoryTimerData && categoryTimerData.end_date) {
+              setCountdownTimer(categoryTimerData);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error loading countdown timer:', err);
+        // 不影响页面加载，只记录错误
       }
     } catch (err) {
       setError('Failed to load product: ' + err.message);
@@ -456,6 +488,21 @@ export default function ProductDetail() {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Countdown Timer */}
+              {countdownTimer && countdownTimer.end_date && (
+                <div className="mb-6">
+                  <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">🔥</span>
+                      <span className="text-lg font-bold text-red-600">
+                        {countdownTimer.title || 'Lowest Price! Black Friday ends in:'}
+                      </span>
+                    </div>
+                    <CountdownTimer endDate={countdownTimer.end_date} />
                   </div>
                 </div>
               )}

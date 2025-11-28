@@ -55,6 +55,17 @@ export async function initDatabase(env) {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS countdown_timers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER,
+        category TEXT,
+        title TEXT,
+        end_date DATETIME NOT NULL,
+        is_enabled BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // 检查是否有管理员用户
@@ -738,6 +749,117 @@ export async function getContactMessages(env, filters = {}) {
   } catch (error) {
     console.error('Error getting contact messages:', error);
     return [];
+  }
+}
+
+/**
+ * 获取所有倒计时配置
+ */
+export async function getAllCountdownTimers(env, publicOnly = false) {
+  if (!env.DB) return [];
+
+  try {
+    let query = 'SELECT * FROM countdown_timers';
+    if (publicOnly) {
+      query += ' WHERE is_enabled = 1 AND end_date > datetime("now")';
+    }
+    query += ' ORDER BY created_at DESC';
+    const { results } = await env.DB.prepare(query).all();
+    return results || [];
+  } catch (error) {
+    console.error('Get countdown timers error:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取特定产品或分类的倒计时
+ */
+export async function getCountdownTimer(env, productId = null, category = null) {
+  if (!env.DB) return null;
+
+  try {
+    let query = 'SELECT * FROM countdown_timers WHERE is_enabled = 1 AND end_date > datetime("now")';
+    const params = [];
+    
+    if (productId) {
+      query += ' AND product_id = ?';
+      params.push(productId);
+    } else if (category) {
+      query += ' AND category = ?';
+      params.push(category);
+    } else {
+      return null;
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT 1';
+    
+    const timer = await env.DB.prepare(query).bind(...params).first();
+    return timer;
+  } catch (error) {
+    console.error('Get countdown timer error:', error);
+    return null;
+  }
+}
+
+/**
+ * 创建或更新倒计时配置
+ */
+export async function upsertCountdownTimer(env, timerData) {
+  if (!env.DB) {
+    throw new Error('Database not configured');
+  }
+
+  try {
+    if (timerData.id) {
+      // 更新现有记录
+      await env.DB.prepare(
+        `UPDATE countdown_timers 
+         SET product_id = ?, category = ?, title = ?, end_date = ?, is_enabled = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`
+      ).bind(
+        timerData.product_id || null,
+        timerData.category || null,
+        timerData.title || null,
+        timerData.end_date,
+        timerData.is_enabled !== undefined ? (timerData.is_enabled ? 1 : 0) : 1,
+        timerData.id
+      ).run();
+      
+      return await env.DB.prepare('SELECT * FROM countdown_timers WHERE id = ?').bind(timerData.id).first();
+    } else {
+      // 插入新记录
+      const result = await env.DB.prepare(
+        `INSERT INTO countdown_timers (product_id, category, title, end_date, is_enabled)
+         VALUES (?, ?, ?, ?, ?)`
+      ).bind(
+        timerData.product_id || null,
+        timerData.category || null,
+        timerData.title || null,
+        timerData.end_date,
+        timerData.is_enabled !== undefined ? (timerData.is_enabled ? 1 : 0) : 1
+      ).run();
+      
+      return await env.DB.prepare('SELECT * FROM countdown_timers WHERE id = ?').bind(result.meta.last_row_id).first();
+    }
+  } catch (error) {
+    console.error('Upsert countdown timer error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 删除倒计时配置
+ */
+export async function deleteCountdownTimer(env, id) {
+  if (!env.DB) return false;
+
+  try {
+    await env.DB.prepare('DELETE FROM countdown_timers WHERE id = ?').bind(id).run();
+    return true;
+  } catch (error) {
+    console.error('Delete countdown timer error:', error);
+    return false;
   }
 }
 
