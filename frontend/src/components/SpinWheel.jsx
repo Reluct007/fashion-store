@@ -169,7 +169,7 @@ export default function SpinWheel({ onClose }) {
                       textAnchor="middle"
                       dominantBaseline="middle"
                       className="font-bold"
-                      style={{ fontSize: '10px' }}
+                      style={{ fontSize: '7px' }}
                       fill="#333"
                       transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                     >
