@@ -91,7 +91,8 @@ export default function SpinWheel({ onClose }) {
       onClick={onClose}
     >
       <div 
-        className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl max-w-lg w-full p-8 relative"
+        className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl w-full p-8 relative"
+        style={{ maxWidth: '40rem' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 关闭按钮 */}
@@ -123,7 +124,7 @@ export default function SpinWheel({ onClose }) {
           </div>
 
           {/* 转盘 */}
-          <div className="relative w-80 h-80">
+          <div className="relative h-80" style={{ width: '30rem', height: '30rem' }}>
             <svg
               ref={wheelRef}
               className="w-full h-full drop-shadow-2xl"
@@ -168,7 +169,7 @@ export default function SpinWheel({ onClose }) {
                       textAnchor="middle"
                       dominantBaseline="middle"
                       className="font-bold"
-                      style={{ fontSize: '11px' }}
+                      style={{ fontSize: '10px' }}
                       fill="#333"
                       transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                     >
