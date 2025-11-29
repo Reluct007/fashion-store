@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
 import Products from './pages/Products';
@@ -9,11 +9,16 @@ import Contact from './pages/Contact';
 import StaticPage from './pages/StaticPage';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
+import ExitIntentPopup from './components/ExitIntentPopup';
+import FloatingGiftButton from './components/FloatingGiftButton';
 import './App.css';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+
   return (
-    <Router>
+    <>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
@@ -47,6 +52,22 @@ function App() {
         <Route path="/terms" element={<StaticPage />} />
         <Route path="/cookies" element={<StaticPage />} />
       </Routes>
+
+      {/* 只在非管理页面显示挽留功能 */}
+      {!isAdminPage && (
+        <>
+          <ExitIntentPopup />
+          <FloatingGiftButton />
+        </>
+      )}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
