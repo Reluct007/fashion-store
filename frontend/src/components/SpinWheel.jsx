@@ -145,9 +145,14 @@ export default function SpinWheel({ onClose }) {
                 const x2 = 100 + 95 * Math.cos(endAngle);
                 const y2 = 100 + 95 * Math.sin(endAngle);
                 
-                const textAngle = (index * 45 - 90 + 22.5) * (Math.PI / 180);
-                const textX = 100 + 60 * Math.cos(textAngle);
-                const textY = 100 + 60 * Math.sin(textAngle);
+                // 文字位置 - 放在扇形中间，距离中心65单位
+                const textAngle = (index * 45 - 90 + 22.5);
+                const textAngleRad = textAngle * (Math.PI / 180);
+                const textX = 100 + 65 * Math.cos(textAngleRad);
+                const textY = 100 + 65 * Math.sin(textAngleRad);
+                
+                // 文字旋转角度 - 使文字沿着半径方向
+                const textRotation = textAngle + 90;
                 
                 return (
                   <g key={item.id}>
@@ -162,9 +167,10 @@ export default function SpinWheel({ onClose }) {
                       y={textY}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      className="font-bold text-xs"
+                      className="font-bold"
+                      style={{ fontSize: '11px' }}
                       fill="#333"
-                      transform={`rotate(${index * 45 + 22.5}, ${textX}, ${textY})`}
+                      transform={`rotate(${textRotation}, ${textX}, ${textY})`}
                     >
                       {item.text}
                     </text>
@@ -173,8 +179,8 @@ export default function SpinWheel({ onClose }) {
               })}
               
               {/* 中心圆 */}
-              <circle cx="100" cy="100" r="15" fill="#333" />
-              <circle cx="100" cy="100" r="10" fill="white" />
+              <circle cx="100" cy="100" r="20" fill="#333" />
+              <circle cx="100" cy="100" r="15" fill="white" />
             </svg>
           </div>
         </div>
