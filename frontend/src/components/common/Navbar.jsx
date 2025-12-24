@@ -6,7 +6,7 @@ import { useCart } from '../../contexts/CartContext';
 
 export default function Navbar({ data = {} }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState({ categories: false, collections: false });
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { cartItems, getCartCount } = useCart();
 
@@ -14,24 +14,101 @@ export default function Navbar({ data = {} }) {
     brand: data.brand || 'Fashion Store',
     logo: data.logo || '/logo.png',
     menu: data.menu || [
-      { label: 'Home', href: '/' },
-      { label: 'Women', href: '/women' },
-      { label: 'Men', href: '/men' },
-      { label: 'Kids', href: '/kids' },
-      { label: 'About', href: '/about' },
-      { label: 'Contact', href: '/contact' }
-    ],
-    categories: data.categories || [
-      { label: 'Dresses', href: '/category/dresses' },
-      { label: 'Tops', href: '/category/tops' },
-      { label: 'Bottoms', href: '/category/bottoms' },
-      { label: 'Outerwear', href: '/category/outerwear' },
-      { label: 'Accessories', href: '/category/accessories' }
-    ],
-    collections: data.collections || [
-      { label: 'New Arrivals', href: '/collection/new' },
-      { label: 'Sale', href: '/collection/sale' },
-      { label: 'Trending', href: '/collection/trending' }
+      {
+        label: 'The Originals',
+        href: '/collections/classic-prints',
+        submenu: [
+          { label: 'Monkey', href: '/collections/monkey' },
+          { label: 'Hearts', href: '/collections/hearts' },
+          { label: 'Moby', href: '/collections/moby' },
+          { label: 'Hathi', href: '/collections/hathi' },
+          { label: 'Amanda', href: '/collections/amanda' },
+          { label: 'Jemina', href: '/collections/jemina' },
+          { label: 'Big Cata', href: '/collections/cata' }
+        ]
+      },
+      {
+        label: 'New Arrivals',
+        href: '/collections/new-arrivals',
+        submenu: [
+          { label: 'Shop All New Arrivals', href: '/collections/new-arrivals' },
+          { label: "Women's New Arrivals", href: '/collections/womens-new-arrivals' },
+          { label: 'Pajamas New Arrivals', href: '/collections/pajamas-new-arrivals' },
+          { label: "Kids' New Arrivals", href: '/collections/kids-new-arrivals' },
+          { label: 'Accessories New Arrivals', href: '/collections/accessories-new-arrivals' },
+          { label: 'Swim New Arrivals', href: '/collections/swim-new-arrivals' }
+        ]
+      },
+      {
+        label: 'Pajamas',
+        href: '/collections/pajamas',
+        submenu: [
+          { label: 'Shop All Pajamas', href: '/collections/pajamas' },
+          { label: "Women's Pajamas", href: '/collections/womens-pajamas' },
+          { label: "Kids' Pajamas", href: '/collections/kids-pajamas' },
+          { label: "Men's Pajamas", href: '/collections/mens-pajamas' },
+          { label: 'Robes & Kimonos', href: '/collections/robes' },
+          { label: 'Baby Pajamas', href: '/collections/baby-clothing' }
+        ]
+      },
+      {
+        label: 'Clothing',
+        href: '/collections/womens-clothes',
+        submenu: [
+          { label: 'Shop All Womens', href: '/collections/womens-clothes' },
+          { label: 'Dresses', href: '/collections/dresses' },
+          { label: 'Tops', href: '/collections/tops' },
+          { label: 'Bottoms', href: '/collections/bottoms' },
+          { label: 'Swim', href: '/collections/womens-swim' },
+          { label: 'Shop All Mens', href: '/collections/mens' },
+          { label: 'Shop All Kids & Baby', href: '/collections/kids-and-baby' }
+        ]
+      },
+      {
+        label: 'Intimates',
+        href: '/collections/intimates',
+        submenu: [
+          { label: 'Shop All Intimates', href: '/collections/intimates' },
+          { label: 'Bralettes + Tops', href: '/collections/intimates-bralettes-tops' },
+          { label: 'Underwear + Bottoms', href: '/collections/intimates-undies-bottoms' },
+          { label: 'Pima Soft Lounge', href: '/collections/intimates-pima-soft-lounge' }
+        ]
+      },
+      {
+        label: 'Accessories',
+        href: '/collections/accessories',
+        submenu: [
+          { label: 'Shop All Accessories', href: '/collections/accessories' },
+          { label: 'Gifts', href: '/collections/gifts' },
+          { label: 'Makeup & Toiletry Cases', href: '/collections/makeup-toiletry-bags' },
+          { label: 'Bags', href: '/collections/bags' },
+          { label: 'Jewelry', href: '/collections/jewelry' },
+          { label: 'Hats & Hair Accessories', href: '/collections/hair' },
+          { label: 'Shoes & Socks', href: '/collections/shoes' }
+        ]
+      },
+      {
+        label: 'Home',
+        href: '/collections/home',
+        submenu: [
+          { label: 'Shop All Home & Bedding', href: '/collections/home' },
+          { label: 'Quilts & Duvets', href: '/collections/quilts-duvets' },
+          { label: 'Sheets & Pillowcases', href: '/collections/sheets-pillowcases' },
+          { label: 'Decorative Pillows', href: '/collections/decorative-pillows' },
+          { label: 'Sleepover Bags', href: '/collections/sleepover-bags' }
+        ]
+      },
+      {
+        label: 'Sale',
+        href: '/collections/sale',
+        submenu: [
+          { label: 'Shop All Sale', href: '/collections/sale' },
+          { label: "Women's Sale", href: '/collections/womens-sale' },
+          { label: "Kids' & Baby Sale", href: '/collections/kids-sale' },
+          { label: 'Accessories Sale', href: '/collections/accessories-sale' },
+          { label: 'Home Sale', href: '/collections/home-sale' }
+        ]
+      }
     ]
   };
 
@@ -51,77 +128,48 @@ export default function Navbar({ data = {} }) {
 
             {/* Menu Items */}
             <div className="flex items-center gap-6">
-              <Link to="/" className="text-gray-700 hover:text-rose-600 transition-colors">
-                Home
-              </Link>
-              
-              {/* Categories Dropdown */}
-              <div 
-                className="relative group"
-                onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, categories: true })}
-                onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, categories: false })}
-              >
-                <button className="text-gray-700 hover:text-rose-600 transition-colors">
-                  Categories
-                </button>
-                {isDropdownOpen.categories && (
+              {navbarData.menu.map((item, index) => (
+                item.submenu ? (
                   <div 
-                    className="absolute left-0 top-full mt-1 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64 z-50"
-                    onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, categories: true })}
-                    onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, categories: false })}
+                    key={index}
+                    className="relative group"
+                    onMouseEnter={() => setActiveDropdown(item.label)}
+                    onMouseLeave={() => setActiveDropdown(null)}
                   >
-                    {navbarData.categories.map((item, idx) => (
-                      <Link 
-                        key={idx} 
-                        to={item.href} 
-                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors py-1 cursor-pointer"
-                        onClick={() => setIsDropdownOpen({ ...isDropdownOpen, categories: false })}
+                    <Link 
+                      to={item.href}
+                      className="text-gray-700 hover:text-rose-600 transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                    {activeDropdown === item.label && (
+                      <div 
+                        className="absolute left-0 top-full mt-1 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64 z-50"
+                        onMouseEnter={() => setActiveDropdown(item.label)}
+                        onMouseLeave={() => setActiveDropdown(null)}
                       >
-                        {item.label}
-                      </Link>
-                    ))}
+                        {item.submenu.map((subitem, idx) => (
+                          <Link 
+                            key={idx} 
+                            to={subitem.href} 
+                            className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors py-1 cursor-pointer"
+                            onClick={() => setActiveDropdown(null)}
+                          >
+                            {subitem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Collections Dropdown */}
-              <div 
-                className="relative group"
-                onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, collections: true })}
-                onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, collections: false })}
-              >
-                <button className="text-gray-700 hover:text-rose-600 transition-colors">
-                  Collections
-                </button>
-                {isDropdownOpen.collections && (
-                  <div 
-                    className="absolute left-0 top-full mt-1 rounded-md border bg-white shadow-lg p-4 grid grid-cols-1 gap-2 w-64 z-50"
-                    onMouseEnter={() => setIsDropdownOpen({ ...isDropdownOpen, collections: true })}
-                    onMouseLeave={() => setIsDropdownOpen({ ...isDropdownOpen, collections: false })}
+                ) : (
+                  <Link 
+                    key={index} 
+                    to={item.href} 
+                    className="text-gray-700 hover:text-rose-600 transition-colors"
                   >
-                    {navbarData.collections.map((item, idx) => (
-                      <Link 
-                        key={idx} 
-                        to={item.href} 
-                        className="text-sm text-gray-700 hover:text-rose-600 hover:underline transition-colors py-1 cursor-pointer"
-                        onClick={() => setIsDropdownOpen({ ...isDropdownOpen, collections: false })}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Static Links */}
-              {navbarData.menu.filter(i => !['Home', 'Categories', 'Collections'].includes(i.label)).map((item, index) => (
-                <Link 
-                  key={index} 
-                  to={item.href} 
-                  className="text-gray-700 hover:text-rose-600 transition-colors"
-                >
-                  {item.label}
-                </Link>
+                    {item.label}
+                  </Link>
+                )
               ))}
             </div>
           </div>
@@ -165,28 +213,30 @@ export default function Navbar({ data = {} }) {
           <div className="lg:hidden py-4 border-t">
             <div className="flex flex-col gap-4">
               {navbarData.menu.map((item, index) => (
-                <Link 
-                  key={index} 
-                  to={item.href}
-                  className="text-gray-700 hover:text-rose-600 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="pt-4 border-t">
-                <p className="text-sm font-semibold text-gray-900 mb-2">Categories</p>
-                {navbarData.categories.map((item, idx) => (
+                <div key={index}>
                   <Link 
-                    key={idx} 
                     to={item.href}
-                    className="block text-sm text-gray-600 hover:text-rose-600 py-1 transition-colors"
+                    className="text-gray-700 hover:text-rose-600 transition-colors font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
                   </Link>
-                ))}
-              </div>
+                  {item.submenu && (
+                    <div className="ml-4 mt-2 flex flex-col gap-2">
+                      {item.submenu.map((subitem, idx) => (
+                        <Link 
+                          key={idx} 
+                          to={subitem.href}
+                          className="block text-sm text-gray-600 hover:text-rose-600 py-1 transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {subitem.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
