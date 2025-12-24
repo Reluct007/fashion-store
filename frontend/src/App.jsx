@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import ExitIntentPopup from './components/ExitIntentPopup';
 import FloatingGiftButton from './components/FloatingGiftButton';
+import { CartProvider } from './contexts/CartContext';
 import './App.css';
 
 function AppContent() {
@@ -66,9 +67,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <CartProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </CartProvider>
   );
 }
 

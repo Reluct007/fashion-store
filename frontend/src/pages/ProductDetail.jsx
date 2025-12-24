@@ -12,10 +12,12 @@ import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 import Toast from '../components/common/Toast';
+import { useCart } from '../contexts/CartContext';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [quantity, setQuantity] = useState(1);
@@ -179,6 +181,7 @@ export default function ProductDetail() {
     }
     
     // 默认行为：添加到购物车
+    addToCart(product, quantity, selectedSize, selectedColor);
     const variantInfo = [];
     if (selectedSize) variantInfo.push(`Size: ${selectedSize}`);
     if (selectedColor) variantInfo.push(`Color: ${selectedColor}`);

@@ -1,16 +1,18 @@
 import { X, Plus, Minus, ShoppingCart } from 'lucide-react';
+import { useCart } from '../../contexts/CartContext';
 
 export default function CartDrawer({ isOpen, onClose, cartItems = [] }) {
+  const { updateQuantity, removeFromCart } = useCart();
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const freeShippingThreshold = 15.85;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
 
-  const handleQuantityChange = (itemId, delta) => {
-    console.log('Update quantity for item:', itemId, 'delta:', delta);
+  const handleQuantityChange = (itemId, size, color, delta) => {
+    updateQuantity(itemId, size, color, delta);
   };
 
-  const handleRemoveItem = (itemId) => {
-    console.log('Remove item:', itemId);
+  const handleRemoveItem = (itemId, size, color) => {
+    removeFromCart(itemId, size, color);
   };
 
   const handleCheckout = () => {
@@ -79,14 +81,14 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [] }) {
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center border border-gray-300 rounded">
                         <button
-                          onClick={() => handleQuantityChange(item.id, -1)}
+                          onClick={() => handleQuantityChange(item.id, item.size, item.color, -1)}
                           className="p-1 hover:bg-gray-100 transition-colors"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <span className="px-3 text-sm font-medium">{item.quantity}</span>
                         <button
-                          onClick={() => handleQuantityChange(item.id, 1)}
+                          onClick={() => handleQuantityChange(item.id, item.size, item.color, 1)}
                           className="p-1 hover:bg-gray-100 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
@@ -96,7 +98,7 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [] }) {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleRemoveItem(item.id)}
+                    onClick={() => handleRemoveItem(item.id, item.size, item.color)}
                     className="text-gray-400 hover:text-red-600 transition-colors text-sm"
                   >
                     Remove
