@@ -11,6 +11,7 @@ import SocialShare from '../components/common/SocialShare';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
+import Toast from '../components/common/Toast';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -28,6 +29,8 @@ export default function ProductDetail() {
   // 尺码和颜色选择
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
+  // Toast notification state
+  const [toast, setToast] = useState(null);
 
   // 促销结束时间（示例：24小时后）
   const saleEndDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -116,11 +119,11 @@ export default function ProductDetail() {
   const handleAddToCart = async () => {
     // 验证尺码和颜色选择
     if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      alert('Please select a size');
+      setToast({ message: 'Please select a size', type: 'error' });
       return;
     }
     if (product.colors && product.colors.length > 0 && !selectedColor) {
-      alert('Please select a color');
+      setToast({ message: 'Please select a color', type: 'error' });
       return;
     }
 
@@ -128,7 +131,7 @@ export default function ProductDetail() {
     if (selectedSize && selectedColor && product.stock && product.stock[selectedSize]) {
       const stockCount = product.stock[selectedSize][selectedColor] || 0;
       if (stockCount < quantity) {
-        alert(`Only ${stockCount} items available in stock`);
+        setToast({ message: `Only ${stockCount} items available in stock`, type: 'error' });
         return;
       }
     }
@@ -168,9 +171,9 @@ export default function ProductDetail() {
           color: selectedColor
         }),
       }).then(() => {
-        alert('Product added successfully!');
+        setToast({ message: 'Product added successfully!', type: 'success' });
       }).catch(() => {
-        alert('Failed to add product');
+        setToast({ message: 'Failed to add product', type: 'error' });
       });
       return;
     }
@@ -180,7 +183,7 @@ export default function ProductDetail() {
     if (selectedSize) variantInfo.push(`Size: ${selectedSize}`);
     if (selectedColor) variantInfo.push(`Color: ${selectedColor}`);
     const variantText = variantInfo.length > 0 ? ` (${variantInfo.join(', ')})` : '';
-    alert(`Added ${quantity} x ${product.name}${variantText} to cart!`);
+    setToast({ message: `Added ${quantity} x ${product.name}${variantText} to cart!`, type: 'success' });
   };
 
   const handleQuantityChange = (delta) => {
@@ -227,6 +230,13 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       {product && (
         <SEO
           title={`${product.name} - Fashion Store`}

@@ -1,10 +1,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ShoppingBag, Search } from 'lucide-react';
+import CartDrawer from './CartDrawer';
 
 export default function Navbar({ data = {} }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState({ categories: false, collections: false });
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Sample cart items - replace with actual cart state management
+  const sampleCartItems = [
+    {
+      id: 1,
+      name: 'Tinned or Twist Boden Pant',
+      color: 'MULTI',
+      size: 'XXS',
+      price: 782.15,
+      quantity: 1,
+      image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400'
+    }
+  ];
 
   const navbarData = {
     brand: data.brand || 'Fashion Store',
@@ -127,18 +142,15 @@ export default function Navbar({ data = {} }) {
             <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
               <Search className="w-5 h-5 text-gray-700" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full transition-colors relative">
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
+            >
               <ShoppingBag className="w-5 h-5 text-gray-700" />
               <span className="absolute top-0 right-0 w-4 h-4 bg-rose-600 text-white text-xs rounded-full flex items-center justify-center">
-                0
+                {sampleCartItems.length}
               </span>
             </button>
-            <Link 
-              to="/admin" 
-              className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
-            >
-              Admin
-            </Link>
           </div>
         </div>
 
@@ -190,6 +202,12 @@ export default function Navbar({ data = {} }) {
           </div>
         )}
       </div>
+
+      <CartDrawer 
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={sampleCartItems}
+      />
     </nav>
   );
 }

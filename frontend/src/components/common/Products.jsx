@@ -102,7 +102,7 @@ export default function Products({ data = {} }) {
             return (
               <div key={product.id || product.slug || productIdentifier} className="group relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow">
                 {/* Product Image */}
-                <div className="relative overflow-hidden">
+                <Link to={`/product/${productIdentifier}`} className="relative overflow-hidden block">
                   <img 
                     src={product.image} 
                     alt={product.name}
@@ -113,15 +113,15 @@ export default function Products({ data = {} }) {
                       Sale
                     </span>
                   )}
-                  <button
-                    onClick={() => toggleFavorite(productIdentifier)}
-                    className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors ${
-                      favorites.has(productIdentifier) ? 'text-rose-600' : 'text-gray-400'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${favorites.has(productIdentifier) ? 'fill-current' : ''}`} />
-                  </button>
-                </div>
+                </Link>
+                <button
+                  onClick={() => toggleFavorite(productIdentifier)}
+                  className={`absolute top-4 right-4 p-2 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white transition-colors ${
+                    favorites.has(productIdentifier) ? 'text-rose-600' : 'text-gray-400'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 ${favorites.has(productIdentifier) ? 'fill-current' : ''}`} />
+                </button>
 
                 {/* Product Info */}
                 <div className="p-6">
