@@ -15,8 +15,8 @@ export default {
 };
 
 // 也可以单独导出组件
-export { Navbar as FashionNavbar } from '../../src/components/common/Navbar';
-export { Hero as FashionHero } from '../../src/components/common/Hero';
-export { Products as FashionProducts } from '../../src/components/common/Products';
-export { Footer as FashionFooter } from '../../src/components/common/Footer';
+export { default as FashionNavbar } from '../../src/components/common/Navbar';
+export { default as FashionHero } from '../../src/components/common/Hero';
+export { default as FashionProducts } from '../../src/components/common/Products';
+export { default as FashionFooter } from '../../src/components/common/Footer';
 
