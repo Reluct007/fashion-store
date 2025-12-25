@@ -36,12 +36,12 @@ function AppContent() {
         />
         <Route path="/product/:id" element={<ProductDetail />} />
         {/* Category and Collection Routes */}
-        <Route path="/women" element={<CategoryPage />} />
-        <Route path="/men" element={<CategoryPage />} />
-        <Route path="/kids" element={<CategoryPage />} />
-        <Route path="/category/:category" element={<CategoryPage />} />
-        <Route path="/collection/:category" element={<CategoryPage />} />
-        <Route path="/sale" element={<CategoryPage />} />
+        <Route path="/collection/hearts" element={<CategoryPage />} /> {/* Hearts */}
+        <Route path="/collection/moby-the-whale" element={<CategoryPage />} /> {/* Moby the Whale */}
+        <Route path="/collection/monkey" element={<CategoryPage />} /> {/* Monkey */}
+        <Route path="/collection/roller-rabbit" element={<CategoryPage />} /> {/* Roller Rabbit */}
+        <Route path="/collection/womens-pajamas" element={<CategoryPage />} /> {/* Women's Pajamas */}
+
         {/* Static Pages */}
         <Route path="/careers" element={<StaticPage />} />
         <Route path="/blog" element={<StaticPage />} />

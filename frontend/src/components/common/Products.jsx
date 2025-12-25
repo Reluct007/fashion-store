@@ -18,7 +18,7 @@ export default function Products({ data = {} }) {
     try {
       setLoading(true);
       const apiProducts = await getProducts();
-      setProducts(apiProducts);
+      setProducts(apiProducts.slice(0, 8));
     } catch (err) {
       console.error('Error loading products:', err);
       // 如果 API 失败，使用示例数据作为后备
