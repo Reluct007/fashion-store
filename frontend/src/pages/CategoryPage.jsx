@@ -3,22 +3,26 @@ import { useParams, useLocation, Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
 import { getProducts } from '../lib/api';
 import { getProductUrlIdentifier } from '../lib/slug';
+import { getCategoryLabelBySlug } from '../lib/categories';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import SEO from '../components/common/SEO';
 
 export default function CategoryPage() {
-  const { category: paramCategory } = useParams();
+  const { categorySlug } = useParams();
   const location = useLocation();
   
   // 从URL路径中提取category，优先使用params，否则从pathname提取
   const getCategoryFromPath = () => {
-    if (paramCategory) {
-      return paramCategory;
+    if (categorySlug) {
+      return categorySlug;
     }
     const path = location.pathname;
     // 提取路径的第一段（除了/）
     const segments = path.split('/').filter(Boolean);
+    if (segments.length >= 2 && (segments[0] === 'collection' || segments[0] === 'collections')) {
+      return segments[1];
+    }
     return segments[0] || null;
   };
   
@@ -41,75 +45,24 @@ export default function CategoryPage() {
       
       let filteredProducts = [];
       if (category) {
-        // 分类筛选（不区分大小写）
-        const categoryLower = category.toLowerCase();
+        const categoryLabel = getCategoryLabelBySlug(category);
+        const normalizedCategoryLabel = (categoryLabel || category || '').toLowerCase();
+        const normalizedCategoryFallback = (category || '').toLowerCase().replace(/-/g, ' ');
+
         filteredProducts = allProducts.filter(product => {
           const productCategory = (product.category || '').toLowerCase();
-          
-          // 精确匹配分类名称
-          if (productCategory === categoryLower) {
-            return true;
+          if (!productCategory) return false;
+
+          if (categoryLabel) {
+            return productCategory === normalizedCategoryLabel;
           }
-          
-          // 特殊处理：女性/男性/儿童
-          if (categoryLower === 'women' || categoryLower === 'woman') {
-            return productCategory.includes('women') || 
-                   productCategory.includes('woman') ||
-                   productCategory.includes('female') ||
-                   productCategory === 'fashion'; // 默认所有产品都是女性时尚
-          }
-          
-          if (categoryLower === 'men' || categoryLower === 'man') {
-            return productCategory.includes('men') || 
-                   productCategory.includes('man') ||
-                   productCategory.includes('male');
-          }
-          
-          if (categoryLower === 'kids' || categoryLower === 'kid' || categoryLower === 'children') {
-            return productCategory.includes('kids') || 
-                   productCategory.includes('kid') ||
-                   productCategory.includes('child') ||
-                   productCategory.includes('children');
-          }
-          
-          // 分类匹配
-          if (categoryLower === 'dresses') {
-            return productCategory.includes('dress');
-          }
-          if (categoryLower === 'tops') {
-            return productCategory.includes('top') || 
-                   productCategory.includes('shirt') ||
-                   productCategory.includes('blouse');
-          }
-          if (categoryLower === 'bottoms') {
-            return productCategory.includes('bottom') ||
-                   productCategory.includes('pants') ||
-                   productCategory.includes('jeans');
-          }
-          if (categoryLower === 'outerwear') {
-            return productCategory.includes('outerwear') ||
-                   productCategory.includes('jacket') ||
-                   productCategory.includes('coat');
-          }
-          if (categoryLower === 'accessories') {
-            return productCategory.includes('accessor');
-          }
-          
-          // 集合筛选
-          if (categoryLower === 'sale') {
-            return product.onSale === true || 
-                   (product.originalPrice && product.price && product.originalPrice > product.price);
-          }
-          if (categoryLower === 'new') {
-            return true; // 所有产品都可以是新款
-          }
-          if (categoryLower === 'trending') {
-            return product.rating && product.rating >= 4.5;
-          }
-          
-          // 模糊匹配
-          return productCategory.includes(categoryLower) || 
-                 categoryLower.includes(productCategory);
+
+          return (
+            productCategory === normalizedCategoryLabel ||
+            productCategory === normalizedCategoryFallback ||
+            productCategory.includes(normalizedCategoryLabel) ||
+            normalizedCategoryLabel.includes(productCategory)
+          );
         });
       } else {
         filteredProducts = allProducts;
@@ -137,21 +90,10 @@ export default function CategoryPage() {
   // 获取页面标题
   const getPageTitle = () => {
     if (!category) return 'All Products';
-    const categoryLower = category.toLowerCase();
-    const categoryMap = {
-      'women': 'Women\'s Fashion',
-      'men': 'Men\'s Fashion',
-      'kids': 'Kids\' Fashion',
-      'dresses': 'Dresses',
-      'tops': 'Tops',
-      'bottoms': 'Bottoms',
-      'outerwear': 'Outerwear',
-      'accessories': 'Accessories',
-      'new': 'New Arrivals',
-      'sale': 'Sale',
-      'trending': 'Trending'
-    };
-    return categoryMap[categoryLower] || category.charAt(0).toUpperCase() + category.slice(1);
+    const categoryLabel = getCategoryLabelBySlug(category);
+    if (categoryLabel) return categoryLabel;
+    const readable = String(category).replace(/-/g, ' ');
+    return readable.charAt(0).toUpperCase() + readable.slice(1);
   };
 
   if (loading) {
